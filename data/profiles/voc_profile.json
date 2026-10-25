@@ -1,0 +1,453 @@
+{
+ "craftsmen": {
+  "number": {
+   "nulls": 0,
+   "rows": 2349
+  },
+  "number_sup": {
+   "nulls": 2348,
+   "rows": 2349
+  },
+  "trip": {
+   "nulls": 0,
+   "rows": 2349
+  },
+  "trip_sup": {
+   "nulls": 2349,
+   "rows": 2349
+  },
+  "onboard_at_departure": {
+   "nulls": 73,
+   "rows": 2349
+  },
+  "death_at_cape": {
+   "nulls": 2299,
+   "rows": 2349
+  },
+  "left_at_cape": {
+   "nulls": 1863,
+   "rows": 2349
+  },
+  "onboard_at_cape": {
+   "nulls": 2076,
+   "rows": 2349
+  },
+  "death_during_voyage": {
+   "nulls": 1764,
+   "rows": 2349
+  },
+  "onboard_at_arrival": {
+   "nulls": 1053,
+   "rows": 2349
+  }
+ },
+ "impotenten": {
+  "number": {
+   "nulls": 0,
+   "distinct": 937,
+   "rows": 938
+  },
+  "number_sup": {
+   "nulls": 937,
+   "distinct": 1,
+   "rows": 938
+  },
+  "trip": {
+   "nulls": 0,
+   "distinct": 10,
+   "rows": 938
+  },
+  "trip_sup": {
+   "nulls": 938,
+   "distinct": 0,
+   "rows": 938
+  },
+  "onboard_at_departure": {
+   "nulls": 0,
+   "distinct": 26,
+   "rows": 938
+  },
+  "death_at_cape": {
+   "nulls": 938,
+   "distinct": 0,
+   "rows": 938
+  },
+  "left_at_cape": {
+   "nulls": 938,
+   "distinct": 0,
+   "rows": 938
+  },
+  "onboard_at_cape": {
+   "nulls": 938,
+   "distinct": 0,
+   "rows": 938
+  },
+  "death_during_voyage": {
+   "nulls": 938,
+   "distinct": 0,
+   "rows": 938
+  },
+  "onboard_at_arrival": {
+   "nulls": 938,
+   "distinct": 0,
+   "rows": 938
+  }
+ },
+ "invoices": {
+  "number": {
+   "nulls": 0,
+   "distinct": 3001,
+   "rows": 3782
+  },
+  "number_sup": {
+   "nulls": 3780,
+   "distinct": 1,
+   "rows": 3782
+  },
+  "trip": {
+   "nulls": 0,
+   "distinct": 10,
+   "rows": 3782
+  },
+  "trip_sup": {
+   "nulls": 3782,
+   "distinct": 0,
+   "rows": 3782
+  },
+  "invoice": {
+   "nulls": 8,
+   "distinct": 3594,
+   "rows": 3782
+  },
+  "chamber": {
+   "nulls": 1,
+   "distinct": 6,
+   "rows": 3782
+  }
+ },
+ "passengers": {
+  "number": {
+   "nulls": 0,
+   "distinct": 2813,
+   "rows": 2813
+  },
+  "number_sup": {
+   "nulls": 2813,
+   "distinct": 0,
+   "rows": 2813
+  },
+  "trip": {
+   "nulls": 0,
+   "distinct": 10,
+   "rows": 2813
+  },
+  "trip_sup": {
+   "nulls": 2813,
+   "distinct": 0,
+   "rows": 2813
+  },
+  "onboard_at_departure": {
+   "nulls": 292,
+   "distinct": 46,
+   "rows": 2813
+  },
+  "death_at_cape": {
+   "nulls": 2797,
+   "distinct": 7,
+   "rows": 2813
+  },
+  "left_at_cape": {
+   "nulls": 2332,
+   "distinct": 23,
+   "rows": 2813
+  },
+  "onboard_at_cape": {
+   "nulls": 2354,
+   "distinct": 29,
+   "rows": 2813
+  },
+  "death_during_voyage": {
+   "nulls": 2564,
+   "distinct": 12,
+   "rows": 2813
+  },
+  "onboard_at_arrival": {
+   "nulls": 1225,
+   "distinct": 46,
+   "rows": 2813
+  }
+ },
+ "seafarers": {
+  "number": {
+   "nulls": 0,
+   "distinct": 4467,
+   "rows": 4468
+  },
+  "number_sup": {
+   "nulls": 4467,
+   "distinct": 1,
+   "rows": 4468
+  },
+  "trip": {
+   "nulls": 0,
+   "distinct": 11,
+   "rows": 4468
+  },
+  "trip_sup": {
+   "nulls": 4467,
+   "distinct": 1,
+   "rows": 4468
+  },
+  "onboard_at_departure": {
+   "nulls": 192,
+   "distinct": 305,
+   "rows": 4468
+  },
+  "death_at_cape": {
+   "nulls": 928,
+   "distinct": 113,
+   "rows": 4468
+  },
+  "left_at_cape": {
+   "nulls": 834,
+   "distinct": 87,
+   "rows": 4468
+  },
+  "onboard_at_cape": {
+   "nulls": 2413,
+   "distinct": 73,
+   "rows": 4468
+  },
+  "death_during_voyage": {
+   "nulls": 1757,
+   "distinct": 103,
+   "rows": 4468
+  },
+  "onboard_at_arrival": {
+   "nulls": 1479,
+   "distinct": 252,
+   "rows": 4468
+  }
+ },
+ "soldiers": {
+  "number": {
+   "nulls": 0,
+   "distinct": 4176,
+   "rows": 4177
+  },
+  "number_sup": {
+   "nulls": 4176,
+   "distinct": 1,
+   "rows": 4177
+  },
+  "trip": {
+   "nulls": 0,
+   "distinct": 11,
+   "rows": 4177
+  },
+  "trip_sup": {
+   "nulls": 4176,
+   "distinct": 1,
+   "rows": 4177
+  },
+  "onboard_at_departure": {
+   "nulls": 312,
+   "distinct": 179,
+   "rows": 4177
+  },
+  "death_at_cape": {
+   "nulls": 3810,
+   "distinct": 33,
+   "rows": 4177
+  },
+  "left_at_cape": {
+   "nulls": 1936,
+   "distinct": 69,
+   "rows": 4177
+  },
+  "onboard_at_cape": {
+   "nulls": 2358,
+   "distinct": 59,
+   "rows": 4177
+  },
+  "death_during_voyage": {
+   "nulls": 2063,
+   "distinct": 74,
+   "rows": 4177
+  },
+  "onboard_at_arrival": {
+   "nulls": 1377,
+   "distinct": 154,
+   "rows": 4177
+  }
+ },
+ "total": {
+  "number": {
+   "nulls": 0,
+   "distinct": 2467,
+   "rows": 2467
+  },
+  "number_sup": {
+   "nulls": 2467,
+   "distinct": 0,
+   "rows": 2467
+  },
+  "trip": {
+   "nulls": 1,
+   "distinct": 9,
+   "rows": 2467
+  },
+  "trip_sup": {
+   "nulls": 2466,
+   "distinct": 1,
+   "rows": 2467
+  },
+  "onboard_at_departure": {
+   "nulls": 391,
+   "distinct": 368,
+   "rows": 2467
+  },
+  "death_at_cape": {
+   "nulls": 989,
+   "distinct": 103,
+   "rows": 2467
+  },
+  "left_at_cape": {
+   "nulls": 1419,
+   "distinct": 91,
+   "rows": 2467
+  },
+  "onboard_at_cape": {
+   "nulls": 2443,
+   "distinct": 18,
+   "rows": 2467
+  },
+  "death_during_voyage": {
+   "nulls": 2261,
+   "distinct": 90,
+   "rows": 2467
+  },
+  "onboard_at_arrival": {
+   "nulls": 2292,
+   "distinct": 143,
+   "rows": 2467
+  }
+ },
+ "voyages": {
+  "artificial_id": {
+   "nulls": 0,
+   "distinct": 8131,
+   "rows": 8131
+  },
+  "number": {
+   "nulls": 0,
+   "distinct": 8126,
+   "rows": 8131
+  },
+  "number_sup": {
+   "nulls": 8126,
+   "distinct": 1,
+   "rows": 8131
+  },
+  "trip": {
+   "nulls": 5,
+   "distinct": 11,
+   "rows": 8131
+  },
+  "trip_sup": {
+   "nulls": 8127,
+   "distinct": 4,
+   "rows": 8131
+  },
+  "boatname": {
+   "nulls": 5,
+   "distinct": 1524,
+   "rows": 8131
+  },
+  "master": {
+   "nulls": 1202,
+   "distinct": 3191,
+   "rows": 8131
+  },
+  "tonnage": {
+   "nulls": 151,
+   "distinct": 342,
+   "rows": 8131
+  },
+  "type_of_boat": {
+   "nulls": 5663,
+   "distinct": 52,
+   "rows": 8131
+  },
+  "built": {
+   "nulls": 1479,
+   "distinct": 181,
+   "rows": 8131
+  },
+  "bought": {
+   "nulls": 7893,
+   "distinct": 56,
+   "rows": 8131
+  },
+  "hired": {
+   "nulls": 8061,
+   "distinct": 22,
+   "rows": 8131
+  },
+  "yard": {
+   "nulls": 545,
+   "distinct": 9,
+   "rows": 8131
+  },
+  "chamber": {
+   "nulls": 150,
+   "distinct": 6,
+   "rows": 8131
+  },
+  "departure_date": {
+   "nulls": 1,
+   "distinct": 3699,
+   "rows": 8131
+  },
+  "departure_harbour": {
+   "nulls": 28,
+   "distinct": 38,
+   "rows": 8131
+  },
+  "cape_arrival": {
+   "nulls": 1143,
+   "distinct": 4712,
+   "rows": 8131
+  },
+  "cape_departure": {
+   "nulls": 1513,
+   "distinct": 3098,
+   "rows": 8131
+  },
+  "cape_call": {
+   "nulls": 0,
+   "distinct": 2,
+   "rows": 8131
+  },
+  "arrival_date": {
+   "nulls": 469,
+   "distinct": 5030,
+   "rows": 8131
+  },
+  "arrival_harbour": {
+   "nulls": 596,
+   "distinct": 61,
+   "rows": 8131
+  },
+  "next_voyage": {
+   "nulls": 1582,
+   "distinct": 6499,
+   "rows": 8131
+  },
+  "particulars": {
+   "nulls": 3259,
+   "distinct": 4365,
+   "rows": 8131
+  }
+ }
+}

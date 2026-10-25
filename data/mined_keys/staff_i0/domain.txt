@@ -1,0 +1,4 @@
+sample[Salary]
+sample[﻿Name,Job]
+sample[﻿Name,DoB]
+sample[DoB,Job]

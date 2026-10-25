@@ -1,0 +1,6 @@
+Hockey.Master[playerID,coachID,hofID]
+Hockey.Master[playerID,coachID,firstName,lastName,deathYear]
+Hockey.Master[playerID,coachID,firstName,lastName,deathMon]
+Hockey.Master[playerID,coachID,lastName,birthMon,deathYear]
+Hockey.Master[playerID,coachID,firstName,lastName,deathDay]
+Hockey.Master[playerID,coachID,firstName,lastName,legendsID]
