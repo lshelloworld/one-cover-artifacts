@@ -1,0 +1,192 @@
+{
+ "AwardsCoaches": [
+  "award",
+  "coachID",
+  "lgID",
+  "year"
+ ],
+ "AwardsMisc": [
+  "award",
+  "lgID",
+  "name",
+  "year"
+ ],
+ "AwardsPlayers": [
+  "award",
+  "lgID",
+  "playerID",
+  "year"
+ ],
+ "Coaches": [
+  "coachID",
+  "lgID",
+  "stint",
+  "tmID",
+  "year"
+ ],
+ "CombinedShutouts": [
+  "IDgoalie1",
+  "IDgoalie2",
+  "R/P",
+  "date",
+  "month",
+  "oppID",
+  "tmID",
+  "year"
+ ],
+ "Goalies": [
+  "lgID",
+  "playerID",
+  "stint",
+  "tmID",
+  "year"
+ ],
+ "GoaliesSC": [
+  "GA",
+  "GP",
+  "L",
+  "Min",
+  "SHO",
+  "T",
+  "W",
+  "lgID",
+  "playerID",
+  "tmID",
+  "year"
+ ],
+ "GoaliesShootout": [
+  "GA",
+  "L",
+  "SA",
+  "W",
+  "playerID",
+  "stint",
+  "tmID",
+  "year"
+ ],
+ "HOF": [
+  "category",
+  "hofID",
+  "name",
+  "year"
+ ],
+ "Master": [
+  "lastName"
+ ],
+ "Scoring": [
+  "lgID",
+  "playerID",
+  "stint",
+  "tmID",
+  "year"
+ ],
+ "ScoringSC": [
+  "A",
+  "G",
+  "GP",
+  "PIM",
+  "Pts",
+  "lgID",
+  "playerID",
+  "pos",
+  "tmID",
+  "year"
+ ],
+ "ScoringShootout": [
+  "G",
+  "GDG",
+  "S",
+  "playerID",
+  "stint",
+  "tmID",
+  "year"
+ ],
+ "ScoringSup": [
+  "playerID",
+  "year"
+ ],
+ "SeriesPost": [
+  "GoalsLoser",
+  "GoalsWinner",
+  "L",
+  "T",
+  "W",
+  "lgIDLoser",
+  "lgIDWinner",
+  "round",
+  "tmIDLoser",
+  "tmIDWinner",
+  "year"
+ ],
+ "TeamSplits": [
+  "hL",
+  "hW",
+  "lgID",
+  "rL",
+  "rW",
+  "tmID",
+  "year"
+ ],
+ "TeamVsTeam": [
+  "L",
+  "W",
+  "lgID",
+  "oppID",
+  "tmID",
+  "year"
+ ],
+ "Teams": [
+  "G",
+  "GA",
+  "GF",
+  "L",
+  "Pts",
+  "W",
+  "franchID",
+  "lgID",
+  "name",
+  "rank",
+  "tmID",
+  "year"
+ ],
+ "TeamsHalf": [
+  "G",
+  "GA",
+  "GF",
+  "L",
+  "T",
+  "W",
+  "half",
+  "lgID",
+  "rank",
+  "tmID",
+  "year"
+ ],
+ "TeamsPost": [
+  "G",
+  "GA",
+  "GF",
+  "L",
+  "T",
+  "W",
+  "lgID",
+  "tmID",
+  "year"
+ ],
+ "TeamsSC": [
+  "G",
+  "GA",
+  "GF",
+  "L",
+  "T",
+  "W",
+  "lgID",
+  "tmID",
+  "year"
+ ],
+ "abbrev": [
+  "Code",
+  "Fullname",
+  "Type"
+ ]
+}

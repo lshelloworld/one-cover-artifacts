@@ -1,0 +1,462 @@
+{
+ "voyages": {
+  "table": "voyages",
+  "declared": 133,
+  "per": {
+   "possible": 86,
+   "domain": 22,
+   "partial": 16,
+   "certain": 9
+  },
+  "nn0": {
+   "cover": 108,
+   "per_out": {
+    "partial": 7,
+    "possible": 76,
+    "domain": 16,
+    "certain": 9
+   },
+   "idx_in": 296,
+   "idx_out": 222,
+   "why": {
+    "R1 same columns, stronger class": 25
+   },
+   "ms": 5.203611999998969,
+   "removed": [
+    "domain(arrival_date,number,yard)",
+    "domain(artificial_id)",
+    "domain(boatname,number)",
+    "domain(built,number,particulars)",
+    "domain(number,particulars,yard)",
+    "domain(number,tonnage)",
+    "partial(artificial_id)",
+    "partial(boatname,number)",
+    "partial(built,next_voyage,number)",
+    "partial(built,number,particulars)",
+    "partial(chamber,next_voyage,number)",
+    "partial(master,next_voyage,number)",
+    "partial(next_voyage,number,yard)",
+    "partial(number,particulars,yard)",
+    "partial(number,tonnage)",
+    "possible(arrival_harbour,number,trip)",
+    "possible(artificial_id)",
+    "possible(boatname,chamber,departure_date)",
+    "possible(boatname,departure_date,particulars)",
+    "possible(boatname,departure_date,trip)",
+    "possible(boatname,number)",
+    "possible(master,number)",
+    "possible(next_voyage,number)",
+    "possible(number,number_sup)",
+    "possible(number,tonnage)"
+   ]
+  },
+  "nn1": {
+   "cover": 108,
+   "per_out": {
+    "partial": 7,
+    "possible": 76,
+    "domain": 16,
+    "certain": 9
+   },
+   "idx_in": 202,
+   "idx_out": 157,
+   "why": {
+    "R1 same columns, stronger class": 25
+   },
+   "ms": 2.280164000001861,
+   "removed": [
+    "domain(arrival_date,number,yard)",
+    "domain(artificial_id)",
+    "domain(boatname,number)",
+    "domain(built,number,particulars)",
+    "domain(number,particulars,yard)",
+    "domain(number,tonnage)",
+    "partial(artificial_id)",
+    "partial(boatname,number)",
+    "partial(built,next_voyage,number)",
+    "partial(built,number,particulars)",
+    "partial(chamber,next_voyage,number)",
+    "partial(master,next_voyage,number)",
+    "partial(next_voyage,number,yard)",
+    "partial(number,particulars,yard)",
+    "partial(number,tonnage)",
+    "possible(arrival_harbour,number,trip)",
+    "possible(artificial_id)",
+    "possible(boatname,chamber,departure_date)",
+    "possible(boatname,departure_date,particulars)",
+    "possible(boatname,departure_date,trip)",
+    "possible(boatname,number)",
+    "possible(master,number)",
+    "possible(next_voyage,number)",
+    "possible(number,number_sup)",
+    "possible(number,tonnage)"
+   ]
+  }
+ },
+ "seafarers": {
+  "table": "seafarers",
+  "declared": 22,
+  "per": {
+   "possible": 9,
+   "domain": 5,
+   "partial": 4,
+   "certain": 4
+  },
+  "nn0": {
+   "cover": 10,
+   "per_out": {
+    "possible": 5,
+    "certain": 4,
+    "domain": 1
+   },
+   "idx_in": 46,
+   "idx_out": 22,
+   "why": {
+    "R1 same columns, stronger class": 12
+   },
+   "ms": 0.06861399999991136,
+   "removed": [
+    "domain(death_at_cape,number)",
+    "domain(left_at_cape,number)",
+    "domain(number,onboard_at_departure)",
+    "domain(number,trip)",
+    "partial(death_at_cape,number)",
+    "partial(left_at_cape,number)",
+    "partial(number,onboard_at_departure)",
+    "partial(number,trip)",
+    "possible(death_at_cape,number)",
+    "possible(left_at_cape,number)",
+    "possible(number,onboard_at_departure)",
+    "possible(number,trip)"
+   ]
+  },
+  "nn1": {
+   "cover": 10,
+   "per_out": {
+    "domain": 1,
+    "possible": 5,
+    "certain": 4
+   },
+   "idx_in": 28,
+   "idx_out": 13,
+   "why": {
+    "R1 same columns, stronger class": 12
+   },
+   "ms": 0.03200200000108566,
+   "removed": [
+    "domain(death_at_cape,number)",
+    "domain(left_at_cape,number)",
+    "domain(number,onboard_at_departure)",
+    "domain(number,trip)",
+    "partial(death_at_cape,number)",
+    "partial(left_at_cape,number)",
+    "partial(number,onboard_at_departure)",
+    "partial(number,trip)",
+    "possible(death_at_cape,number)",
+    "possible(left_at_cape,number)",
+    "possible(number,onboard_at_departure)",
+    "possible(number,trip)"
+   ]
+  }
+ },
+ "craftsmen": {
+  "table": "craftsmen",
+  "declared": 21,
+  "per": {
+   "possible": 14,
+   "domain": 3,
+   "partial": 2,
+   "certain": 2
+  },
+  "nn0": {
+   "cover": 15,
+   "per_out": {
+    "possible": 12,
+    "domain": 1,
+    "certain": 2
+   },
+   "idx_in": 33,
+   "idx_out": 21,
+   "why": {
+    "R1 same columns, stronger class": 6
+   },
+   "ms": 0.08667299999842726,
+   "removed": [
+    "domain(number,onboard_at_departure)",
+    "domain(number,trip)",
+    "partial(number,onboard_at_departure)",
+    "partial(number,trip)",
+    "possible(number,onboard_at_departure)",
+    "possible(number,trip)"
+   ]
+  },
+  "nn1": {
+   "cover": 15,
+   "per_out": {
+    "possible": 12,
+    "domain": 1,
+    "certain": 2
+   },
+   "idx_in": 23,
+   "idx_out": 16,
+   "why": {
+    "R1 same columns, stronger class": 6
+   },
+   "ms": 0.0692369999981679,
+   "removed": [
+    "domain(number,onboard_at_departure)",
+    "domain(number,trip)",
+    "partial(number,onboard_at_departure)",
+    "partial(number,trip)",
+    "possible(number,onboard_at_departure)",
+    "possible(number,trip)"
+   ]
+  }
+ },
+ "total": {
+  "table": "total",
+  "declared": 16,
+  "per": {
+   "possible": 13,
+   "domain": 1,
+   "partial": 1,
+   "certain": 1
+  },
+  "nn0": {
+   "cover": 13,
+   "per_out": {
+    "possible": 12,
+    "certain": 1
+   },
+   "idx_in": 18,
+   "idx_out": 14,
+   "why": {
+    "R1 same columns, stronger class": 3
+   },
+   "ms": 0.056652000001378156,
+   "removed": [
+    "domain(number)",
+    "partial(number)",
+    "possible(number)"
+   ]
+  },
+  "nn1": {
+   "cover": 13,
+   "per_out": {
+    "possible": 12,
+    "certain": 1
+   },
+   "idx_in": 16,
+   "idx_out": 13,
+   "why": {
+    "R1 same columns, stronger class": 3
+   },
+   "ms": 0.039869999998387584,
+   "removed": [
+    "domain(number)",
+    "partial(number)",
+    "possible(number)"
+   ]
+  }
+ },
+ "soldiers": {
+  "table": "soldiers",
+  "declared": 16,
+  "per": {
+   "possible": 9,
+   "domain": 3,
+   "partial": 2,
+   "certain": 2
+  },
+  "nn0": {
+   "cover": 10,
+   "per_out": {
+    "domain": 1,
+    "possible": 7,
+    "certain": 2
+   },
+   "idx_in": 28,
+   "idx_out": 16,
+   "why": {
+    "R1 same columns, stronger class": 6
+   },
+   "ms": 0.0523239999985492,
+   "removed": [
+    "domain(number,onboard_at_departure)",
+    "domain(number,trip)",
+    "partial(number,onboard_at_departure)",
+    "partial(number,trip)",
+    "possible(number,onboard_at_departure)",
+    "possible(number,trip)"
+   ]
+  },
+  "nn1": {
+   "cover": 10,
+   "per_out": {
+    "domain": 1,
+    "possible": 7,
+    "certain": 2
+   },
+   "idx_in": 18,
+   "idx_out": 11,
+   "why": {
+    "R1 same columns, stronger class": 6
+   },
+   "ms": 0.033911999999247655,
+   "removed": [
+    "domain(number,onboard_at_departure)",
+    "domain(number,trip)",
+    "partial(number,onboard_at_departure)",
+    "partial(number,trip)",
+    "possible(number,onboard_at_departure)",
+    "possible(number,trip)"
+   ]
+  }
+ },
+ "impotenten": {
+  "table": "impotenten",
+  "declared": 16,
+  "per": {
+   "possible": 9,
+   "domain": 3,
+   "partial": 2,
+   "certain": 2
+  },
+  "nn0": {
+   "cover": 10,
+   "per_out": {
+    "domain": 1,
+    "certain": 2,
+    "possible": 7
+   },
+   "idx_in": 28,
+   "idx_out": 16,
+   "why": {
+    "R1 same columns, stronger class": 6
+   },
+   "ms": 0.04633900000072799,
+   "removed": [
+    "domain(number,onboard_at_departure)",
+    "domain(number,trip)",
+    "partial(number,onboard_at_departure)",
+    "partial(number,trip)",
+    "possible(number,onboard_at_departure)",
+    "possible(number,trip)"
+   ]
+  },
+  "nn1": {
+   "cover": 10,
+   "per_out": {
+    "domain": 1,
+    "certain": 2,
+    "possible": 7
+   },
+   "idx_in": 16,
+   "idx_out": 10,
+   "why": {
+    "R1 same columns, stronger class": 6
+   },
+   "ms": 0.020347999999614785,
+   "removed": [
+    "domain(number,onboard_at_departure)",
+    "domain(number,trip)",
+    "partial(number,onboard_at_departure)",
+    "partial(number,trip)",
+    "possible(number,onboard_at_departure)",
+    "possible(number,trip)"
+   ]
+  }
+ },
+ "invoices": {
+  "table": "invoices",
+  "declared": 8,
+  "per": {
+   "possible": 5,
+   "domain": 1,
+   "partial": 1,
+   "certain": 1
+  },
+  "nn0": {
+   "cover": 5,
+   "per_out": {
+    "possible": 4,
+    "certain": 1
+   },
+   "idx_in": 14,
+   "idx_out": 8,
+   "why": {
+    "R1 same columns, stronger class": 3
+   },
+   "ms": 0.02495700000082479,
+   "removed": [
+    "domain(chamber,number)",
+    "partial(chamber,number)",
+    "possible(chamber,number)"
+   ]
+  },
+  "nn1": {
+   "cover": 5,
+   "per_out": {
+    "possible": 4,
+    "certain": 1
+   },
+   "idx_in": 10,
+   "idx_out": 6,
+   "why": {
+    "R1 same columns, stronger class": 3
+   },
+   "ms": 0.011659999998414605,
+   "removed": [
+    "domain(chamber,number)",
+    "partial(chamber,number)",
+    "possible(chamber,number)"
+   ]
+  }
+ },
+ "passengers": {
+  "table": "passengers",
+  "declared": 7,
+  "per": {
+   "possible": 4,
+   "domain": 1,
+   "partial": 1,
+   "certain": 1
+  },
+  "nn0": {
+   "cover": 4,
+   "per_out": {
+    "possible": 3,
+    "certain": 1
+   },
+   "idx_in": 9,
+   "idx_out": 5,
+   "why": {
+    "R1 same columns, stronger class": 3
+   },
+   "ms": 0.01160000000055561,
+   "removed": [
+    "domain(number)",
+    "partial(number)",
+    "possible(number)"
+   ]
+  },
+  "nn1": {
+   "cover": 4,
+   "per_out": {
+    "possible": 3,
+    "certain": 1
+   },
+   "idx_in": 7,
+   "idx_out": 4,
+   "why": {
+    "R1 same columns, stronger class": 3
+   },
+   "ms": 0.00736699999848156,
+   "removed": [
+    "domain(number)",
+    "partial(number)",
+    "possible(number)"
+   ]
+  }
+ }
+}
