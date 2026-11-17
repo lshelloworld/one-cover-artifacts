@@ -16,10 +16,18 @@ sys.path.insert(0, 'experiments/lib')
 import psycopg2
 from exp_db2_pg import *          # DSN, N, K, cols, cname, index_ddl, trigger_ddl, table_ddl, guarded, REJECT, parse_key, check_sql
 
-OUTF = 'results/D_enforcement/db2_pg_extra.jsonl'
+OUTF = _os.environ.get('ONECOVER_XL_OUT', 'results/D_enforcement/db2_pg_extra.jsonl')
 orig = [json.loads(l) for l in open('results/D_enforcement/db2_log.jsonl')]
+KEYSET = int(_os.environ.get('ONECOVER_KEYSET', 0))   # 0 = the key sets of the paper; k > 0 = a fresh draw per size
 def keyset(m, t=0):
-    o = next(r for r in orig if r['fragment'] == 'ALL' and r['m'] == m and r['trial'] == t)
+    o = None if KEYSET else next((r for r in orig if r['fragment'] == 'ALL' and r['m'] == m and r['trial'] == t), None)
+    if o is None:   # |Sigma| not in db2_log.jsonl: draw as random_keys_capped does, seeded by m
+        from keys import mincover_general
+        rng = random.Random(1000 + m + 1000 * KEYSET); NN = (1 << K) - 1; S = set()
+        while len(S) < m:
+            size = min(MAXSIZE, 2 + sum(rng.random() < 0.3 for _ in range(N - 2)))
+            S.add((rng.choice(FRAGMENTS['ALL']), sum(1 << c for c in rng.sample(range(N), size))))
+        S = sorted(S); return S, mincover_general(S, NN), NN
     return [parse_key(s) for s in o['input']], [parse_key(s) for s in o['output']], (1 << K) - 1
 
 def pair_cond(cls, K_):
@@ -55,10 +63,13 @@ def guarded_ac(cur, sql, params):
     except REJECT:
         return False
 
-def run(con, keys, NN, rows, ups, scheme):
+def run(con, keys, NN, rows, ups, scheme, rid_index=False):
     cur = con.cursor(); t0 = time.perf_counter()
     g = guarded_ac if con.autocommit else guarded
-    nobj = (make_naive if scheme == 'naive' else make_indexed)(cur, keys, NN); t_ddl = time.perf_counter() - t0
+    nobj = (make_naive if scheme == 'naive' else make_indexed)(cur, keys, NN)
+    if rid_index:   # xl: without it every update scans the table for its rid (same cost for input and cover)
+        cur.execute('CREATE INDEX t_rid ON T(rid)')
+    t_ddl = time.perf_counter() - t0
     ins = 'INSERT INTO T(' + ','.join(cname(i) for i in range(N)) + ') VALUES(' + ','.join(['%s'] * N) + ')'
     acc = 0; t0 = time.perf_counter()
     for r in rows:
@@ -103,12 +114,17 @@ if __name__ == '__main__':
             rec = dict(exp='naive', m=m, in_keys=len(S), out_keys=len(G), sigma=rS, cover=rG); out.write(json.dumps(rec) + '\n'); out.flush()
             print('naive', m, 'ins %.1f/%.1f upd %.1f/%.1f chk %.2f/%.2f acc %d' % (rS['t_insert'], rG['t_insert'], rS['t_update'], rG['t_update'], rS['t_check'], rG['t_check'], rS['accepted']), flush=True)
     else:
+        # large: 100k inserts, 20k updates; xl: 1M inserts, 200k updates, values in [0,32000), index on rid
+        # (V grows with sqrt(rows), keeping the per-key collision rate of the 100k run)
+        ms, ROWS_, UPD_, V_ = ([10, 20], 100000, 20000, 10000) if which == 'large' else ([10, 20, 30, 40, 50], 1000000, 200000, 32000)
+        if len(sys.argv) > 2: ms = [int(x) for x in sys.argv[2].split(',')]   # optional subset of the sizes
         con.autocommit = True; con.cursor().execute('SET synchronous_commit = off')
-        for m in [10, 20]:
-            if ('large', m) in done: continue
-            S, G, NN = keyset(m); rows, ups = workload(random.Random(11), 100000, 20000, 10000)
-            rS, stS = run(con, S, NN, rows, ups, 'indexed'); rG, stG = run(con, G, NN, rows, ups, 'indexed')
+        for m in ms:
+            if (which, m) in done: continue
+            S, G, NN = keyset(m); rows, ups = workload(random.Random(11), ROWS_, UPD_, V_)
+            ri = which == 'xl'
+            rS, stS = run(con, S, NN, rows, ups, 'indexed', ri); rG, stG = run(con, G, NN, rows, ups, 'indexed', ri)
             assert stS == stG
-            rec = dict(exp='large', m=m, in_keys=len(S), out_keys=len(G), sigma=rS, cover=rG); out.write(json.dumps(rec) + '\n'); out.flush()
-            print('large', m, 'idx %d/%d ins %.1f/%.1f upd %.1f/%.1f chk %.2f/%.2f acc %d' % (rS['objects'], rG['objects'], rS['t_insert'], rG['t_insert'], rS['t_update'], rG['t_update'], rS['t_check'], rG['t_check'], rS['accepted']), flush=True)
+            rec = dict(exp=which, m=m, keyset=KEYSET, rid_index=ri, in_keys=len(S), out_keys=len(G), sigma=rS, cover=rG); out.write(json.dumps(rec) + '\n'); out.flush()
+            print(which, m, 'keys %d/%d' % (len(S), len(G)), 'idx %d/%d ins %.1f/%.1f upd %.1f/%.1f chk %.2f/%.2f acc %d' % (rS['objects'], rG['objects'], rS['t_insert'], rG['t_insert'], rS['t_update'], rG['t_update'], rS['t_check'], rG['t_check'], rS['accepted']), flush=True)
     print('done')

@@ -41,7 +41,7 @@ fig.tight_layout(); fig.savefig(f'{C}/expC_col.pdf'); plt.close(fig)
 sq = [json.loads(l) for l in open('results/D_enforcement/db2_log.jsonl')]
 pg = json.load(open('results/D_enforcement/db2_pg_results.json'))
 def mean(R, f, m, side, k): return st.mean(r[side][k] for r in R if r['fragment'] == f and r['m'] == m)
-for R, name, title in ((sq, 'expD', 'Experiment D (SQLite)'), (pg, 'expD_pg', 'Experiment D (PostgreSQL 16)')):
+for R, name, title in ((sq, 'expD', 'Experiment D (SQLite)'), (pg, 'expD_pg', 'Experiment D (PostgreSQL 18.6)')):
     fig, ax = plt.subplots(1, 4, figsize=(16, 3.6))
     for f in COL:
         xs = sorted({r['m'] for r in R if r['fragment'] == f})
@@ -53,7 +53,7 @@ for R, name, title in ((sq, 'expD', 'Experiment D (SQLite)'), (pg, 'expD_pg', 'E
     ax[0].legend(fontsize=7); fig.suptitle(f'{title}: filtered-index enforcement, 8 columns, 1500 inserts, 600 updates (mean of 5 trials)')
     fig.tight_layout(); fig.savefig(f'{J}/{name}.pdf'); plt.close(fig)
 fig, ax = plt.subplots(2, 3, figsize=(13, 5.0))
-for row, (R, eng) in enumerate(((sq, 'SQLite 3.45 (in memory)'), (pg, 'PostgreSQL 16'))):
+for row, (R, eng) in enumerate(((sq, 'SQLite 3.45 (in memory)'), (pg, 'PostgreSQL 18.6'))):
     for j, (k, t) in enumerate((('t_insert', 'inserts'), ('t_update', 'updates'), ('t_check', 'integrity check'))):
         for f in COL:
             xs = sorted({r['m'] for r in R if r['fragment'] == f})

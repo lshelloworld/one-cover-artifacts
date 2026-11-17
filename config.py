@@ -8,3 +8,9 @@ DSN = dict(host=os.environ.get('ONECOVER_DB_HOST', 'localhost'),
            user=os.environ.get('ONECOVER_DB_USER', 'postgres'),
            password=os.environ.get('ONECOVER_DB_PASSWORD', ''),
            dbname=os.environ.get('ONECOVER_DB_NAME', 'onecover'))
+# MySQL (Experiment D on MySQL): login from ~/.my.cnf unless ONECOVER_MYSQL_PASSWORD is set
+MYSQL = dict(host=os.environ.get('ONECOVER_MYSQL_HOST', 'localhost'),
+             port=int(os.environ.get('ONECOVER_MYSQL_PORT', '3306')),
+             database=os.environ.get('ONECOVER_MYSQL_NAME', 'onecover'),
+             **(dict(user=os.environ.get('ONECOVER_MYSQL_USER', 'root'), password=os.environ['ONECOVER_MYSQL_PASSWORD'])
+                if 'ONECOVER_MYSQL_PASSWORD' in os.environ else dict(option_files=os.path.expanduser('~/.my.cnf'))))

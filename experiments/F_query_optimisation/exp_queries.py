@@ -3,7 +3,7 @@ _ROOT = _os.path.dirname(_os.path.abspath(__file__))
 while not _os.path.exists(_os.path.join(_ROOT, 'config.py')): _ROOT = _os.path.dirname(_ROOT)
 _sys.path[:0] = [_ROOT] + [_os.path.join(_ROOT, 'experiments', d) for d in ('lib', 'D_enforcement', 'E_real_tables', 'F_query_optimisation', 'E_mined_keys')]
 _os.chdir(_ROOT)
-"""Measure the query rewrites licensed by the keys of the cover, on Hockey and VOC in PostgreSQL 16.
+"""Measure the query rewrites licensed by the keys of the cover, on Hockey and VOC in PostgreSQL (results in the paper: 18.6).
 Each table is created with its profiled NOT NULL columns and the indexes of its cover (no triggers).
 For every query: original vs rewritten form, identical results checked, plans and server-side
 execution time (EXPLAIN ANALYZE, median of RUNS after one warm-up)."""
@@ -17,6 +17,16 @@ from check_mined import read
 RUNS = 9
 DSN = __import__('config').DSN
 q = lambda c: '"' + c + '"'
+SCALE = 1                       # copies of every table (argv[1]); 1 = the exported tables
+
+def salt(i):
+    """64-bit signed salt of copy i; copy 0 is the original data."""
+    import random
+    return 0 if i == 0 else random.Random(i).getrandbits(64) - (1 << 63)
+
+def outfile(name):
+    tag = _os.environ.get('ONECOVER_F_TAG', '')   # e.g. '_rerun', so a rerun leaves the recorded files as they are
+    return f'results/F_query_optimisation/{name}{tag}.json' if SCALE == 1 else f'results/F_query_optimisation/{name}_x{SCALE}{tag}.json'
 
 def voc_keys():
     U = 'data/mined_keys'
@@ -34,8 +44,10 @@ def setup(cur, db, table, keysets, with_keys=True, tname=None):
     cols, rows, nn = hd.load(table); ci = {c: i for i, c in enumerate(cols)}; tname = tname or table.lower()
     cur.execute(f'DROP TABLE IF EXISTS {tname} CASCADE')
     cur.execute(f'CREATE TABLE {tname} (' + ', '.join(f'{q(c)} bigint' + (' NOT NULL' if c in nn else '') for c in cols) + ')')
-    buf = io.StringIO('\n'.join('\t'.join('\\N' if v is None else str(v) for v in r) for r in rows) + '\n')
-    cur.copy_expert(f'COPY {tname} FROM STDIN', buf)
+    for i in range(SCALE):      # copy i XORs every non-null value with salt(i): equality, nulls and keys
+        s = salt(i)             # hold within a copy, copies share no values, joins across tables still match
+        buf = io.StringIO('\n'.join('\t'.join('\\N' if v is None else str(v ^ s) for v in r) for r in rows) + '\n')
+        cur.copy_expert(f'COPY {tname} FROM STDIN', buf)
     n_idx = 0
     if with_keys:
         S = [(c, sum(1 << ci[x] for x in K)) for c, K in keysets[table]]; NN = sum(1 << ci[c] for c in nn)
@@ -57,6 +69,7 @@ def measure(cur, sql):
     return times, res, nodes(plan)
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1: SCALE = int(sys.argv[1])
     con = psycopg2.connect(**DSN); con.autocommit = True; cur = con.cursor()
     H, V = read(1), voc_keys()
     for t in ['Master', 'Coaches']: setup(cur, 'hockey', t, H)
@@ -107,5 +120,5 @@ if __name__ == '__main__':
         if alt: print(f"   {altlabel[:9]:9s}: plan {rec['alt_ms'][0]:7.2f} ms + exec {rec['alt_ms'][1]:7.3f} ms  rows {rec['alt_rows']:5d}  {rec['alt_plan'][:3]}  same result: {rec['same_result']}")
     cur.execute("SELECT relname, pg_relation_size(oid) FROM pg_class WHERE relname IN ('master_k1_0','master_k1_1','master_k1_2','master_k1_3') OR relname LIKE 'master_k%' ORDER BY 1")
     sizes = cur.fetchall()
-    json.dump(out, open('results/F_query_optimisation/queries.json', 'w'), indent=1)
+    json.dump(out, open(outfile('queries'), 'w'), indent=1)
     print('done')

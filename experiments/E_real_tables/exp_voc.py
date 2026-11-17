@@ -19,7 +19,7 @@ for cls, f in FILES.items():
     for line in open(f'{U}/{f}', encoding='utf-8-sig'):
         line = line.strip()
         if line: t, cs = line.split('['); T[t.split('.')[1]].append((cls, tuple(cs.rstrip(']').split(','))))
-OUT = 'results/E_real_tables/voc_pg.jsonl'
+OUT = os.environ.get('ONECOVER_VOC_OUT', 'results/E_real_tables/voc_pg.jsonl')
 if __name__ == '__main__':
     # 1. do the mined keys hold?  (and the voyages triangle)
     ok = bad = 0; fails = []

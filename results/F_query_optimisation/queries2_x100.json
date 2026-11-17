@@ -1,0 +1,50 @@
+{
+ "reload UNIQUE (SQL default)": {
+  "inserted": 100,
+  "total": 378300,
+  "ms": 222.3627089999809
+ },
+ "reload domain key: NULLS NOT DISTINCT": {
+  "inserted": 0,
+  "total": 378200,
+  "ms": 220.76637500001084
+ },
+ "next voyage cover indexes": {
+  "plan_ms": 0.517,
+  "exec_ms": 397.441,
+  "rows": 813100,
+  "est": 813100,
+  "inner_unique": false
+ },
+ "next voyage without the key": {
+  "plan_ms": 0.048,
+  "exec_ms": 343.809,
+  "rows": 813100,
+  "est": 813100,
+  "inner_unique": false
+ },
+ "eager": {
+  "orig": [
+   1.118,
+   349.416
+  ],
+  "eager": [
+   0.912,
+   500.922
+  ],
+  "rows": 404000,
+  "same": true
+ },
+ "pk": {
+  "pk": [
+   1.279,
+   187.572
+  ],
+  "full": [
+   1.314,
+   188.412
+  ],
+  "rows": 151900,
+  "same": true
+ }
+}

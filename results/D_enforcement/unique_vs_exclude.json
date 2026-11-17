@@ -1,0 +1,310 @@
+{
+ "version": "PostgreSQL 18.6 on aarch64-apple-darwin24.6.0, compiled by Apple clang version 17.0.0 (clang-1700.0.13.5), 64-bit",
+ "bulk": 500000,
+ "single": 100000,
+ "reps": 3,
+ "load_start": [
+  3.59619140625,
+  4.0849609375,
+  4.62939453125
+ ],
+ "runs": [
+  {
+   "mode": "bulk",
+   "keys": 1,
+   "rows": 500000,
+   "median_s": {
+    "none": 0.296,
+    "index": 0.761,
+    "unique": 0.775,
+    "exclude": 1.082,
+    "trigger": 1.703
+   },
+   "all_s": {
+    "none": [
+     0.289,
+     0.296,
+     0.296
+    ],
+    "index": [
+     0.849,
+     0.753,
+     0.761
+    ],
+    "unique": [
+     0.748,
+     0.775,
+     0.786
+    ],
+    "exclude": [
+     1.052,
+     1.082,
+     1.082
+    ],
+    "trigger": [
+     1.714,
+     1.684,
+     1.703
+    ]
+   },
+   "check_us_per_row_key": {
+    "unique": 0.03,
+    "exclude": 0.64,
+    "trigger": 1.88
+   },
+   "maint_us_per_row_key": 0.93,
+   "load": [
+    3.88232421875,
+    4.1279296875,
+    4.63525390625
+   ]
+  },
+  {
+   "mode": "bulk",
+   "keys": 4,
+   "rows": 500000,
+   "median_s": {
+    "none": 0.303,
+    "index": 2.464,
+    "unique": 2.4,
+    "exclude": 3.597,
+    "trigger": 5.94
+   },
+   "all_s": {
+    "none": [
+     0.303
+    ],
+    "index": [
+     2.464,
+     2.382,
+     2.592
+    ],
+    "unique": [
+     2.628,
+     2.4,
+     2.39
+    ],
+    "exclude": [
+     3.597,
+     3.708,
+     3.575
+    ],
+    "trigger": [
+     5.963,
+     5.911,
+     5.94
+    ]
+   },
+   "check_us_per_row_key": {
+    "unique": -0.03,
+    "exclude": 0.57,
+    "trigger": 1.74
+   },
+   "maint_us_per_row_key": 1.08,
+   "load": [
+    3.77783203125,
+    4.08642578125,
+    4.59423828125
+   ]
+  },
+  {
+   "mode": "bulk",
+   "keys": 8,
+   "rows": 500000,
+   "median_s": {
+    "none": 0.279,
+    "index": 5.415,
+    "unique": 5.33,
+    "exclude": 7.581,
+    "trigger": 12.914
+   },
+   "all_s": {
+    "none": [
+     0.279
+    ],
+    "index": [
+     5.415,
+     5.22,
+     5.566
+    ],
+    "unique": [
+     5.33,
+     4.941,
+     5.37
+    ],
+    "exclude": [
+     7.581,
+     7.391,
+     7.721
+    ],
+    "trigger": [
+     12.914,
+     13.024,
+     12.583
+    ]
+   },
+   "check_us_per_row_key": {
+    "unique": -0.02,
+    "exclude": 0.54,
+    "trigger": 1.87
+   },
+   "maint_us_per_row_key": 1.28,
+   "load": [
+    5.328125,
+    4.5068359375,
+    4.697265625
+   ]
+  },
+  {
+   "mode": "single",
+   "keys": 1,
+   "rows": 100000,
+   "median_s": {
+    "none": 4.031,
+    "index": 4.229,
+    "unique": 4.209,
+    "exclude": 4.437,
+    "trigger": 4.709
+   },
+   "all_s": {
+    "none": [
+     4.037,
+     3.991,
+     4.031
+    ],
+    "index": [
+     4.218,
+     4.229,
+     4.351
+    ],
+    "unique": [
+     4.194,
+     4.209,
+     4.243
+    ],
+    "exclude": [
+     4.437,
+     4.359,
+     4.511
+    ],
+    "trigger": [
+     4.709,
+     4.722,
+     4.705
+    ]
+   },
+   "check_us_per_row_key": {
+    "unique": -0.21,
+    "exclude": 2.08,
+    "trigger": 4.79
+   },
+   "maint_us_per_row_key": 1.99,
+   "load": [
+    5.18017578125,
+    4.60498046875,
+    4.71630859375
+   ]
+  },
+  {
+   "mode": "single",
+   "keys": 4,
+   "rows": 100000,
+   "median_s": {
+    "none": 4.007,
+    "index": 4.695,
+    "unique": 4.667,
+    "exclude": 4.94,
+    "trigger": 5.872
+   },
+   "all_s": {
+    "none": [
+     4.007
+    ],
+    "index": [
+     4.651,
+     4.749,
+     4.695
+    ],
+    "unique": [
+     4.73,
+     4.667,
+     4.6
+    ],
+    "exclude": [
+     4.987,
+     4.909,
+     4.94
+    ],
+    "trigger": [
+     5.816,
+     5.878,
+     5.872
+    ]
+   },
+   "check_us_per_row_key": {
+    "unique": -0.07,
+    "exclude": 0.61,
+    "trigger": 2.94
+   },
+   "maint_us_per_row_key": 1.72,
+   "load": [
+    4.43310546875,
+    4.54345703125,
+    4.6865234375
+   ]
+  },
+  {
+   "mode": "single",
+   "keys": 8,
+   "rows": 100000,
+   "median_s": {
+    "none": 3.987,
+    "index": 5.27,
+    "unique": 5.247,
+    "exclude": 5.767,
+    "trigger": 7.248
+   },
+   "all_s": {
+    "none": [
+     3.987
+    ],
+    "index": [
+     5.197,
+     5.281,
+     5.27
+    ],
+    "unique": [
+     5.216,
+     5.283,
+     5.247
+    ],
+    "exclude": [
+     5.739,
+     5.767,
+     5.788
+    ],
+    "trigger": [
+     7.259,
+     7.213,
+     7.248
+    ]
+   },
+   "check_us_per_row_key": {
+    "unique": -0.03,
+    "exclude": 0.62,
+    "trigger": 2.47
+   },
+   "maint_us_per_row_key": 1.6,
+   "load": [
+    3.36279296875,
+    4.17236328125,
+    4.53125
+   ]
+  }
+ ],
+ "load_end": [
+  3.36279296875,
+  4.17236328125,
+  4.53125
+ ]
+}

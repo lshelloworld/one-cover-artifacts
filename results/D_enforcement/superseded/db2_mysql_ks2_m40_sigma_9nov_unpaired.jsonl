@@ -1,0 +1,1 @@
+{"exp": "xl", "scheme": "perkey", "m": 40, "side": "sigma", "keyset": 2, "result": {"objects": 40, "accepted": 740574, "updated": 189856, "t_ddl": 1.8423818330000001, "t_insert": 43152.190738917, "t_update": 16414.663004041002, "t_check": 0.0}, "state_sha256": "01bfaca9afa07aa14f61ba29cb1a926c891e9a0dc7c898a0bc75b26dce7dd4c9", "finished": "2026-11-09 18:23:28"}

@@ -1,0 +1,58 @@
+{
+ "data": "wikidata_people",
+ "rows": 144327,
+ "columns": [
+  "viaf",
+  "isni",
+  "lc",
+  "bnf",
+  "nta",
+  "ndl",
+  "orcid",
+  "sudoc"
+ ],
+ "not_null": [],
+ "max_size": 6,
+ "mined": {
+  "possible": 7,
+  "domain": 0,
+  "partial": 0,
+  "certain": 0
+ },
+ "cover": 7,
+ "removed_by": {},
+ "keys": {
+  "possible": [
+   [
+    "bnf"
+   ],
+   [
+    "viaf",
+    "orcid"
+   ],
+   [
+    "isni",
+    "orcid"
+   ],
+   [
+    "lc",
+    "orcid"
+   ],
+   [
+    "nta",
+    "orcid"
+   ],
+   [
+    "ndl",
+    "orcid"
+   ],
+   [
+    "orcid",
+    "sudoc"
+   ]
+  ],
+  "domain": [],
+  "partial": [],
+  "certain": []
+ }
+}

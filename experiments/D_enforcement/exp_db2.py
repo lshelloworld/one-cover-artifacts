@@ -21,7 +21,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-OUT = 'results/D_enforcement'
+OUT = os.environ.get('ONECOVER_D_OUT', 'results/D_enforcement')
 os.makedirs(OUT, exist_ok=True); os.makedirs(f'{OUT}/pg', exist_ok=True)
 N, K = 8, 2
 ROWS, UPDATES = 1500, 600

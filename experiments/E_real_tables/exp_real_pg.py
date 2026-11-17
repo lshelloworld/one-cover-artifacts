@@ -17,7 +17,7 @@ from hockey_data import load, tables
 from check_mined import read
 
 DSN = __import__('config').DSN
-OUT = 'results/E_real_tables/real_pg.jsonl'
+OUT = os.environ.get('ONECOVER_E_OUT', 'results/E_real_tables/real_pg.jsonl')
 q = lambda c: '"' + c.replace('"', '""') + '"'
 
 def subsets(lst):

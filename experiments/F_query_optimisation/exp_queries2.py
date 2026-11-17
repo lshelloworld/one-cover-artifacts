@@ -8,13 +8,15 @@ _os.chdir(_ROOT)
 import sys, json, statistics
 sys.path.insert(0, 'experiments/lib')
 import psycopg2
-from exp_queries import setup, voc_keys, measure, DSN
+import exp_queries
+from exp_queries import setup, voc_keys, measure, outfile, DSN
 from check_mined import read
 
 def show(label, t, rows, plan):
     print(f'   {label:28s} plan {t[0]:7.2f} ms + exec {t[1]:7.3f} ms  rows {rows:5d}  {plan[:4]}')
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1: exp_queries.SCALE = int(sys.argv[1])   # copies of every table, as in exp_queries.py
     con = psycopg2.connect(**DSN); con.autocommit = True; cur = con.cursor()
     H, V = read(1), voc_keys(); out = {}
     for t in ['Master', 'Goalies', 'Teams']: setup(cur, 'hockey', t, H)
@@ -23,6 +25,7 @@ if __name__ == '__main__':
 
     # (1) idempotent reload
     print('R1 idempotent reload of invoices: INSERT ... ON CONFLICT (number, chamber) DO NOTHING')
+    cur.execute('SELECT count(*) FROM invoices'); src = cur.fetchone()[0]
     for label, opt in [('UNIQUE (SQL default)', ''), ('domain key: NULLS NOT DISTINCT', 'NULLS NOT DISTINCT')]:
         cur.execute('DROP TABLE IF EXISTS inv2'); cur.execute('CREATE TABLE inv2 AS SELECT * FROM invoices')
         cur.execute(f'CREATE UNIQUE INDEX inv2_k ON inv2 ("number","chamber") {opt}')
@@ -34,7 +37,7 @@ if __name__ == '__main__':
         cur.execute('INSERT INTO inv2 SELECT * FROM invoices ON CONFLICT ("number","chamber") DO NOTHING')
         cur.execute('SELECT count(*) FROM inv2'); total = cur.fetchone()[0]
         out[f'reload {label}'] = dict(inserted=n, total=total, ms=statistics.median(ts))
-        print(f'   {label:32s} rows inserted by the reload: {n}   table afterwards: {total} (source 3782)   {statistics.median(ts):.2f} ms')
+        print(f'   {label:32s} rows inserted by the reload: {n}   table afterwards: {total} (source {src})   {statistics.median(ts):.2f} ms')
 
     # (2) a ship's next voyage
     print("R2 a ship's next voyage: voyages LEFT JOIN voyages ON (number, boatname) = (next_voyage, boatname)")
@@ -72,5 +75,5 @@ if __name__ == '__main__':
     ta, ra, pa = measure(cur, q4); tb, rb, pb = measure(cur, q4full)
     show('PRIMARY KEY, GROUP BY key', ta, len(ra), pa); show('GROUP BY key and name', tb, len(rb), pb); print('      same result:', ra == rb)
     out['pk'] = dict(pk=ta, full=tb, rows=len(ra), same=ra == rb)
-    json.dump(out, open('results/F_query_optimisation/queries2.json', 'w'), indent=1, default=str)
+    json.dump(out, open(outfile('queries2'), 'w'), indent=1, default=str)
     print('done')

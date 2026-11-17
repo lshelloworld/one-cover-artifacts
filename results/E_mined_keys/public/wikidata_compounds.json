@@ -1,0 +1,63 @@
+{
+ "data": "wikidata_compounds",
+ "rows": 146716,
+ "columns": [
+  "inchikey",
+  "cas",
+  "chemspider",
+  "chebi",
+  "chembl",
+  "unii",
+  "kegg",
+  "drugbank"
+ ],
+ "not_null": [],
+ "max_size": 6,
+ "mined": {
+  "possible": 8,
+  "domain": 0,
+  "partial": 0,
+  "certain": 0
+ },
+ "cover": 8,
+ "removed_by": {},
+ "keys": {
+  "possible": [
+   [
+    "chembl"
+   ],
+   [
+    "inchikey",
+    "kegg"
+   ],
+   [
+    "cas",
+    "kegg"
+   ],
+   [
+    "chemspider",
+    "kegg"
+   ],
+   [
+    "chebi",
+    "kegg"
+   ],
+   [
+    "unii",
+    "kegg"
+   ],
+   [
+    "kegg",
+    "drugbank"
+   ],
+   [
+    "cas",
+    "chemspider",
+    "chebi"
+   ]
+  ],
+  "domain": [],
+  "partial": [],
+  "certain": []
+ }
+}

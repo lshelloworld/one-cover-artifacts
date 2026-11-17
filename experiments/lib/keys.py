@@ -21,7 +21,8 @@ def subset(a, b):
 
 # ---------------------------------------------------------------- colouring
 def not_two_colourable(V, edges):
-    """Algorithm 2.  V: vertex mask; edges: list of masks (subsets of V)."""
+    """Algorithm 2.  V: vertex mask; edges: list of masks (subsets of V).
+    A partial colouring is a pair of disjoint masks (R, B); search branches on vertices."""
     if any(popcount(e) <= 1 for e in edges):
         return True
     # minimal edges only
@@ -30,43 +31,56 @@ def not_two_colourable(V, edges):
     for e in edges:
         if not any(subset(f, e) for f in minimal):
             minimal.append(e)
-    edges = minimal
-    E2 = [e for e in edges if popcount(e) == 2]
-    E3 = [e for e in edges if popcount(e) >= 3]
-    verts = [i for i in range(V.bit_length()) if V >> i & 1]
 
-    def bipartite(graph_edges):
-        adj = {v: [] for v in verts}
-        for e in graph_edges:
-            a, b = [i for i in verts if e >> i & 1]
-            adj[a].append(b); adj[b].append(a)
-        colour = {}
-        for s in verts:
-            if s in colour:
-                continue
-            colour[s] = 0
-            stack = [s]
-            while stack:
-                u = stack.pop()
-                for w in adj[u]:
-                    if w not in colour:
-                        colour[w] = 1 - colour[u]; stack.append(w)
-                    elif colour[w] == colour[u]:
-                        return False
-        return True
+    def free_bits(e, R, B):
+        f = e & ~(R | B)
+        while f:
+            b = f & -f; yield b; f ^= b
 
-    def branch(j, F):
-        if j == len(E3):
-            return not bipartite(F)
-        e = E3[j]
-        vs = [i for i in verts if e >> i & 1]
-        v = vs[0]
-        for w in vs[1:]:
-            if not branch(j + 1, F + [(1 << v) | (1 << w)]):
-                return False
-        return True
+    def colourable(R, B, active):
+        changed = True
+        while changed:                                   # propagation
+            changed = False; rest = []
+            for e in active:
+                if e & R and e & B:
+                    continue                             # both colours: satisfied
+                f = e & ~(R | B)
+                if f == 0:
+                    return False                         # monochromatic
+                if f & (f - 1) == 0:                     # one free vertex: forced
+                    if e & R: B |= f
+                    else: R |= f
+                    changed = True; continue
+                rest.append(e)
+            active = rest
+        while True:                                      # a free vertex in one edge only satisfies it
+            occ = {}
+            for e in active:
+                for b in free_bits(e, R, B):
+                    occ[b] = occ.get(b, 0) + 1
+            keep = [e for e in active if all(occ[b] > 1 for b in free_bits(e, R, B))]
+            if len(keep) == len(active):
+                break
+            active = keep
+        if not active:
+            return True
+        w = {}                                           # branch on the vertex in most and smallest edges
+        for e in active:
+            k = popcount(e & ~(R | B))
+            for b in free_bits(e, R, B):
+                w[b] = w.get(b, 0) + 1.0 / k
+        v = max(w, key=w.get)
+        return colourable(R | v, B, active) or colourable(R, B | v, active)
 
-    return branch(0, E2)
+    # connected components are coloured independently
+    comps = []                                           # (vertex mask, edges)
+    for e in minimal:
+        cv, ce = e, [e]
+        for c in [c for c in comps if c[0] & e]:
+            cv |= c[0]; ce += c[1]; comps.remove(c)
+        comps.append((cv, ce))
+    # the two colours are symmetric: one vertex of each component starts red
+    return not all(colourable(cv & -cv, 0, ce) for cv, ce in comps)
 
 # -------------------------------------------------------------- implication
 def implies(sigma, phi, NN):

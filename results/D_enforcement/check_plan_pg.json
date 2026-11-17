@@ -1,0 +1,50 @@
+[
+ {
+  "fragment": "F1",
+  "m": 120,
+  "input": {
+   "keys": 120,
+   "indexes": 390,
+   "plan_ms": 96.643,
+   "exec_ms": 1848.5230000000006
+  },
+  "cover": {
+   "keys": 29,
+   "indexes": 92,
+   "plan_ms": 5.309,
+   "exec_ms": 447.70900000000006
+  }
+ },
+ {
+  "fragment": "F2",
+  "m": 120,
+  "input": {
+   "keys": 120,
+   "indexes": 405,
+   "plan_ms": 101.04899999999996,
+   "exec_ms": 2815.3669999999997
+  },
+  "cover": {
+   "keys": 26,
+   "indexes": 79,
+   "plan_ms": 4.183000000000001,
+   "exec_ms": 808.789
+  }
+ },
+ {
+  "fragment": "ALL",
+  "m": 120,
+  "input": {
+   "keys": 120,
+   "indexes": 587,
+   "plan_ms": 165.53199999999998,
+   "exec_ms": 2594.4740000000015
+  },
+  "cover": {
+   "keys": 29,
+   "indexes": 97,
+   "plan_ms": 5.55,
+   "exec_ms": 669.9019999999999
+  }
+ }
+]

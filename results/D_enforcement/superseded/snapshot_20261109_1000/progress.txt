@@ -1,0 +1,6 @@
+snapshot Mon Nov  9 10:00:49 +08 2026
+load { 2.89 3.63 3.17 }; Now drawing from 'AC Power'
+run going
+sides finished for m=40: 0
+rows accepted so far on the current side: 597002
+current statement: INSERT INTO T(c0,c1,c2,c3,c4,c5,c6,c7) VALUES(7837,22101,19673,NULL,30527,22542,

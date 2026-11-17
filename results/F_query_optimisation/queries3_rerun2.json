@@ -1,0 +1,78 @@
+{
+ "Q7": {
+  "none": {
+   "plan_ms": 0.039,
+   "exec_ms": 2.004,
+   "rows": 8131,
+   "est": 923
+  },
+  "cover": {
+   "plan_ms": 0.308,
+   "exec_ms": 1.988,
+   "rows": 8131,
+   "est": 923
+  },
+  "all": {
+   "plan_ms": 0.443,
+   "exec_ms": 2.011,
+   "rows": 8131,
+   "est": 923
+  },
+  "n_cover": 157,
+  "n_all": 202
+ },
+ "Q8": {
+  "none": {
+   "plan_ms": 0.019,
+   "exec_ms": 1.651,
+   "rows": 6136,
+   "est": 367
+  },
+  "cover": {
+   "plan_ms": 0.379,
+   "exec_ms": 1.657,
+   "rows": 6136,
+   "est": 367
+  },
+  "all": {
+   "plan_ms": 0.509,
+   "exec_ms": 1.634,
+   "rows": 6136,
+   "est": 367
+  },
+  "n_cover": 157,
+  "n_all": 202
+ },
+ "next voyage": {
+  "cover": {
+   "plan_ms": 0.337,
+   "exec_ms": 1.661,
+   "rows": 8131,
+   "plan": [
+    "Hash Join",
+    "Seq Scan on voyages",
+    "Hash",
+    "Seq Scan on voyages"
+   ]
+  },
+  "cover + UNIQUE": {
+   "plan_ms": 0.175,
+   "exec_ms": 0.308,
+   "rows": 8131,
+   "plan": [
+    "Seq Scan on voyages"
+   ]
+  },
+  "without the key": {
+   "plan_ms": 0.031,
+   "exec_ms": 1.728,
+   "rows": 8131,
+   "plan": [
+    "Hash Join",
+    "Seq Scan on voyages_nokeys",
+    "Hash",
+    "Seq Scan on voyages_nokeys"
+   ]
+  }
+ }
+}

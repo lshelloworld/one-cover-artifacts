@@ -235,7 +235,7 @@ if __name__ == '__main__':
         yg = [statistics.mean(r['cover']['indexes'] for r in results if r['fragment'] == frag and r['m'] == x) for x in xs]
         ax[3].plot(xs, ys, 'o--', color=COL[frag]); ax[3].plot(xs, yg, 's-', color=COL[frag]); ax[3].set_title('indexes created'); ax[3].set_xlabel(r'$|\Sigma|$')
     ax[0].legend(fontsize=7)
-    fig.suptitle(f"Experiment D (PostgreSQL 16): filtered-index enforcement, {N} columns, {ROWS} inserts, {UPDATES} updates (mean of {TRIALS} trials)")
+    fig.suptitle(f"Experiment D (PostgreSQL): filtered-index enforcement, {N} columns, {ROWS} inserts, {UPDATES} updates (mean of {TRIALS} trials)")
     fig.tight_layout(); fig.savefig(f'{OUT}/expD_pg.pdf'); fig.savefig(f'{OUT}/expD_pg.png', dpi=110)
     # LaTeX table in the layout of tab:expD
     rows_tex = []

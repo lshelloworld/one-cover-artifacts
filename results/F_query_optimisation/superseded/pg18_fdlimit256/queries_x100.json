@@ -1,0 +1,188 @@
+[
+ {
+  "query": "Q1 join elimination (possible key, Hockey)",
+  "key": "possible(coachID) on Master",
+  "orig_ms": [
+   38.023,
+   7.526
+  ],
+  "orig_rows": 181200,
+  "orig_plan": [
+   "Seq Scan on coaches"
+  ],
+  "alt": "without the key",
+  "alt_ms": [
+   0.109,
+   122.185
+  ],
+  "alt_rows": 181200,
+  "alt_plan": [
+   "Gather",
+   "Hash Join",
+   "Seq Scan on coaches",
+   "Hash",
+   "Seq Scan on master_nokeys"
+  ],
+  "same_result": true
+ },
+ {
+  "query": "Q2 join elimination (candidate key, VOC)",
+  "key": "certain(number,trip) on soldiers, craftsmen",
+  "orig_ms": [
+   0.09,
+   38.079
+  ],
+  "orig_rows": 446800,
+  "orig_plan": [
+   "Seq Scan on seafarers"
+  ]
+ },
+ {
+  "query": "Q3 GROUP BY to projection (domain key, VOC)",
+  "key": "domain(number,chamber) on invoices",
+  "orig_ms": [
+   0.062,
+   134.007
+  ],
+  "orig_rows": 378200,
+  "orig_plan": [
+   "Aggregate",
+   "Incremental Sort",
+   "Index Scan on invoices using invoices_k1"
+  ],
+  "alt": "rewritten",
+  "alt_ms": [
+   0.028,
+   19.454
+  ],
+  "alt_rows": 378200,
+  "alt_plan": [
+   "Seq Scan on invoices"
+  ],
+  "same_result": true
+ },
+ {
+  "query": "Q4 DISTINCT removal (domain key implied by partial key, Hockey)",
+  "key": "domain(playerID,coachID,hofID) via R1",
+  "orig_ms": [
+   46.952,
+   367.805
+  ],
+  "orig_rows": 776100,
+  "orig_plan": [
+   "Aggregate",
+   "Seq Scan on master"
+  ],
+  "alt": "rewritten",
+  "alt_ms": [
+   34.824,
+   107.271
+  ],
+  "alt_rows": 776100,
+  "alt_plan": [
+   "Seq Scan on master"
+  ],
+  "same_result": true
+ },
+ {
+  "query": "Q5 null-pattern lookup (partial key family, Hockey)",
+  "key": "partial(playerID,coachID,hofID)",
+  "orig_ms": [
+   35.867,
+   0.01
+  ],
+  "orig_rows": 1,
+  "orig_plan": [
+   "Index Scan on master using master_k264_4"
+  ],
+  "alt": "without the key",
+  "alt_ms": [
+   0.029,
+   32.954
+  ],
+  "alt_rows": 1,
+  "alt_plan": [
+   "Gather",
+   "Seq Scan on master_nokeys"
+  ],
+  "same_result": true
+ },
+ {
+  "query": "Q6 lost-ship lookup (partial key family, VOC)",
+  "key": "partial(number,yard,arrival_date)",
+  "orig_ms": [
+   0.137,
+   0.003
+  ],
+  "orig_rows": 1,
+  "orig_plan": [
+   "Index Scan on voyages using voyages_k58_2"
+  ],
+  "alt": "without the key",
+  "alt_ms": [
+   0.032,
+   51.564
+  ],
+  "alt_rows": 1,
+  "alt_plan": [
+   "Gather",
+   "Seq Scan on voyages_nokeys"
+  ],
+  "same_result": true
+ },
+ {
+  "query": "Q7 subsumption anti-join removal (partial key, VOC)",
+  "key": "partial(number,yard,arrival_date)",
+  "orig_ms": [
+   0.52,
+   325.786
+  ],
+  "orig_rows": 813100,
+  "orig_plan": [
+   "Gather",
+   "Hash Join",
+   "Seq Scan on voyages",
+   "Hash",
+   "Seq Scan on voyages"
+  ],
+  "alt": "rewritten",
+  "alt_ms": [
+   0.27,
+   81.077
+  ],
+  "alt_rows": 813100,
+  "alt_plan": [
+   "Seq Scan on voyages"
+  ],
+  "same_result": true
+ },
+ {
+  "query": "Q8 record linkage, all probes (certain key, VOC)",
+  "key": "certain(number,yard,next_voyage)",
+  "orig_ms": [
+   0.591,
+   200.067
+  ],
+  "orig_rows": 613600,
+  "orig_plan": [
+   "Gather",
+   "Hash Join",
+   "Seq Scan on voyages",
+   "Hash",
+   "Seq Scan on voyages"
+  ],
+  "alt": "rewritten (LIMIT 1)",
+  "alt_ms": [
+   0.518,
+   643.76
+  ],
+  "alt_rows": 613600,
+  "alt_plan": [
+   "Nested Loop",
+   "Seq Scan on voyages",
+   "Limit",
+   "Index Scan on voyages using voyages_k102"
+  ],
+  "same_result": true
+ }
+]

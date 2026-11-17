@@ -3,8 +3,8 @@
   "query": "Q1 join elimination (possible key, Hockey)",
   "key": "possible(coachID) on Master",
   "orig_ms": [
-   0.433,
-   0.16
+   0.24,
+   0.07
   ],
   "orig_rows": 1812,
   "orig_plan": [
@@ -12,8 +12,8 @@
   ],
   "alt": "without the key",
   "alt_ms": [
-   0.13,
-   1.457
+   0.035,
+   0.552
   ],
   "alt_rows": 1812,
   "alt_plan": [
@@ -28,8 +28,8 @@
   "query": "Q2 join elimination (candidate key, VOC)",
   "key": "certain(number,trip) on soldiers, craftsmen",
   "orig_ms": [
-   0.069,
-   0.352
+   0.029,
+   0.166
   ],
   "orig_rows": 4468,
   "orig_plan": [
@@ -40,8 +40,8 @@
   "query": "Q3 GROUP BY to projection (domain key, VOC)",
   "key": "domain(number,chamber) on invoices",
   "orig_ms": [
-   0.076,
-   2.063
+   0.009,
+   0.699
   ],
   "orig_rows": 3782,
   "orig_plan": [
@@ -50,8 +50,8 @@
   ],
   "alt": "rewritten",
   "alt_ms": [
-   0.017,
-   0.43
+   0.006,
+   0.171
   ],
   "alt_rows": 3782,
   "alt_plan": [
@@ -63,8 +63,8 @@
   "query": "Q4 DISTINCT removal (domain key implied by partial key, Hockey)",
   "key": "domain(playerID,coachID,hofID) via R1",
   "orig_ms": [
-   1.301,
-   3.673
+   0.326,
+   1.113
   ],
   "orig_rows": 7761,
   "orig_plan": [
@@ -73,8 +73,8 @@
   ],
   "alt": "rewritten",
   "alt_ms": [
-   0.791,
-   1.106
+   0.234,
+   0.34
   ],
   "alt_rows": 7761,
   "alt_plan": [
@@ -86,17 +86,17 @@
   "query": "Q5 null-pattern lookup (partial key family, Hockey)",
   "key": "partial(playerID,coachID,hofID)",
   "orig_ms": [
-   0.707,
-   0.014
+   0.292,
+   0.002
   ],
   "orig_rows": 1,
   "orig_plan": [
-   "Index Scan on master using master_k260_4"
+   "Index Scan on master using master_k228_4"
   ],
   "alt": "without the key",
   "alt_ms": [
-   0.023,
-   0.452
+   0.005,
+   0.163
   ],
   "alt_rows": 1,
   "alt_plan": [
@@ -108,17 +108,17 @@
   "query": "Q6 lost-ship lookup (partial key family, VOC)",
   "key": "partial(number,yard,arrival_date)",
   "orig_ms": [
-   0.252,
-   0.011
+   0.119,
+   0.002
   ],
   "orig_rows": 1,
   "orig_plan": [
-   "Index Scan on voyages using voyages_k20_2"
+   "Index Scan on voyages using voyages_k23_2"
   ],
   "alt": "without the key",
   "alt_ms": [
-   0.027,
-   0.948
+   0.005,
+   0.322
   ],
   "alt_rows": 1,
   "alt_plan": [
@@ -130,8 +130,8 @@
   "query": "Q7 subsumption anti-join removal (partial key, VOC)",
   "key": "partial(number,yard,arrival_date)",
   "orig_ms": [
-   59.032,
-   6.093
+   0.314,
+   1.979
   ],
   "orig_rows": 8131,
   "orig_plan": [
@@ -142,8 +142,8 @@
   ],
   "alt": "rewritten",
   "alt_ms": [
-   0.176,
-   0.719
+   0.09,
+   0.309
   ],
   "alt_rows": 8131,
   "alt_plan": [
@@ -155,8 +155,8 @@
   "query": "Q8 record linkage, all probes (certain key, VOC)",
   "key": "certain(number,yard,next_voyage)",
   "orig_ms": [
-   196.561,
-   5.061
+   0.338,
+   1.587
   ],
   "orig_rows": 6136,
   "orig_plan": [
@@ -167,8 +167,8 @@
   ],
   "alt": "rewritten (LIMIT 1)",
   "alt_ms": [
-   1.4,
-   13.822
+   0.261,
+   3.736
   ],
   "alt_rows": 6136,
   "alt_plan": [

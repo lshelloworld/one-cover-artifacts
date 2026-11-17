@@ -2,6 +2,7 @@ cff-version: 1.2.0
 message: "If you use these artifacts, please cite the paper."
 title: "One Cover to Enforce Them All: Database Keys over Incomplete Relations"
 authors:
-  - name: "Anonymous Authors"
+  - name: "Henning Koehler"
+  - name: "Sebastian Link"
 type: software
 license: MIT

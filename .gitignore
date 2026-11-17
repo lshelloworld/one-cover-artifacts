@@ -7,3 +7,18 @@ __pycache__/
 *.blg
 *.synctex.gz
 paper/*.pdf
+data/public/
+*.o
+*.so
+*.dylib
+*.bc
+# macOS, Dropbox, editors
+.DS_Store
+*conflicted copy*
+# LaTeX intermediates and diffs
+*.fls
+*.fdb_latexmk
+paper/vldb-diff-*
+# local backups and MySQL resume files (the finished .jsonl files are committed)
+backups_tier1/
+*.partial

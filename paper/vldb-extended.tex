@@ -6,7 +6,7 @@
 %%% VLDB block end %%%
 \renewcommand\vldbdoi{XX.XX/XXX.XX}
 \renewcommand\vldbpages{XXX-XXX}
-\renewcommand\vldbavailabilityurl{https://github.com/lshelloworld/one-cover-artifacts}
+\renewcommand\vldbavailabilityurl{https://anonymous.4open.science/r/one-cover-artifacts}
 
 \usepackage{amsmath}% amssymb clashes with acmart's math fonts
 \setlength{\emergencystretch}{1.5em}% narrow columns with long \sql words
@@ -40,9 +40,12 @@
 
 \begin{document}
 \title[One Cover to Enforce Them All: Database Keys over Incomplete Relations]{One Cover to Enforce Them All:\\ Database Keys over Incomplete Relations}
-\author{Anonymous Author(s)}
-\affiliation{\institution{Anonymous Institution}\city{}\country{}}
-\email{anonymous@example.org}
+\author{Henning Koehler}
+\affiliation{\institution{DataViadotto Limited}\city{Auckland}\country{New Zealand}}
+\email{h.koehler@viadotto.tech}
+\author{Sebastian Link}
+\affiliation{\institution{DataViadotto Limited}\city{Auckland}\country{New Zealand}}
+\email{s.link@viadotto.tech}
 
 \begin{abstract}
 SQL tables offer diverse ways to identify their records uniquely---\sql{PRIMARY KEY}
@@ -53,19 +56,22 @@ check on every insert and update, so a system should enforce not the declared se
 but a cover: a smallest equivalent set of keys. We show that for all five kinds of
 keys with \sql{NOT NULL} constraints, minimal and optimal covers coincide and are
 unique: the non-redundant subset of the declared keys is the only cover. Computing
-it rests on a complete account of implication. Four rules suffice except for certain
-keys, which partial keys imply exactly when a hypergraph on the key's nullable
-columns has no proper 2-colouring; implication is therefore coNP-complete and not
-finitely axiomatisable, yet the cover algorithm is quadratic without either partial
-or certain keys and otherwise adds one small colouring test per certain key. On
-SQLite and PostgreSQL, enforcing the cover of 120 declared keys makes inserts,
-updates and integrity checks one to two orders of magnitude faster while admitting
-identical data. On keys mined from two real databases, every key the miner deems
-meaningful is mined once per class, and the cover keeps one; enforcing the cover
-instead of all mined keys on the real tables removes 27--28\,\% of the indexes and
-38--39\,\% of the insert time.
+it rests on a complete account of implication. One premise at a time suffices except
+for certain keys, which partial keys imply jointly exactly when a hypergraph on the
+key's nullable columns has no proper 2-colouring; implication is therefore
+coNP-complete and not finitely axiomatisable, yet the cover algorithm is quadratic
+without either partial or certain keys and otherwise adds one small colouring test
+per certain key. In our experiments the savings come from reasoning across classes
+one key at a time, and the theory guarantees that nothing more is to be found:
+on keys mined from two real databases, every redundant key is a column set mined in
+several classes, and enforcing the cover removes 8--28\,\% of the indexes and
+29--40\,\% of the insert time; with a million inserts on PostgreSQL the cover of
+30--50 random keys makes inserts and updates 1.2 to 9 times faster, and of 120 keys
+makes inserts 11 to 35 times faster on SQLite and PostgreSQL, and still 2.5 times
+with a native index for partial and certain keys; input and cover always admit
+identical data.
 \end{abstract}
-\keywords{Database , Key , Null , Cover , Implication , Index}
+\keywords{Database, Key, Null, Cover, Implication, Index}
 \maketitle
 \vldbtopmatter
 
@@ -81,8 +87,8 @@ a set of columns on which no two records may agree. In Codd's relational model w
 missing values the notion is unambiguous~\cite{Codd70,LO78}. In SQL, where any column
 not declared \sql{NOT NULL} may carry the marker \nul, the single notion splits.
 SQL's own \sql{UNIQUE} constraint only rejects two records that agree on non-null
-values and coincides with the \emph{possible keys} of K\"ohler, Leck, Link and
-Zhou~\cite{KLLZ16}; their \emph{certain keys} hold in every possible world that
+values and coincides with the \emph{possible keys} of K\"ohler, Link and
+Zhou~\cite{KLZ15,KLLZ16}; their \emph{certain keys} hold in every possible world that
 replaces nulls by values. Koehler and Link~\cite{KoehlerL25} add \emph{domain
 keys}, which treat \nul\ as an ordinary value, and \emph{partial keys}, which forbid
 one record from being subsumed by another, and order the four semantics as
@@ -108,9 +114,11 @@ disk; a key implied by the others is pure overhead, and a key wrongly believed t
 implied leaves a hole in entity integrity. The set a system should enforce is a \emph{cover}: an equivalent set of
 keys that is minimal (fewest keys) or optimal (fewest attribute occurrences, hence
 least index width). For functional dependencies the two notions differ and optimal
-covers are NP-hard to find; our main result is that for the five classes of keys they
-coincide and the cover is unique, which turns redundancy elimination, index selection
-and normalisation~\cite{Fagin81,ZL25} into one implication test per declared key.
+covers are NP-hard to find. For keys over complete relations both notions are
+trivial; our main result is that for the five classes of keys over incomplete
+relations they still coincide and the cover is unique, so that redundancy
+elimination becomes one implication test per declared key, and a cover is a
+well-defined input for normalisation~\cite{Fagin81,ZL25}.
 
 Each class in isolation is easy: a key is implied by keys of the same class exactly
 when some declared key is contained in it. Possible and certain keys together with
@@ -128,14 +136,22 @@ all of them, and how to compute it.
   quadratic one-pass algorithm computes it in the two maximal fragments, and an
   algorithm for the combined class adds one colouring test per certain key
   (Section~\ref{sec:covers}).
-\item \emph{Experiments.} On SQLite and PostgreSQL, enforcing the cover instead of
-  120 declared keys with filtered unique indexes and pattern-dispatched triggers
-  makes inserts, updates and integrity checks one to two orders of magnitude faster
-  while admitting identical data. On the keys mined from the 21 tables of a real
-  database, every key the miner considers meaningful is declared once per class and
-  the cover keeps one; enforced on the real tables, the cover removes 27\,\% of the
-  indexes and 38\,\% of the insert time, and its keys license query rewrites that
-  SQL's \sql{UNIQUE} does not (Section~\ref{sec:experiments}).
+\item \emph{Experiments.} Almost all redundancy is found one key at a time, but
+  across classes. On random key sets, dropping every key implied by a single other
+  key already yields the cover in 14 of 15 configurations, whereas dropping weaker
+  keys on the same column set removes at most 19\,\%; on keys mined from two real
+  databases, every redundant key is a column set mined in several classes. Enforced
+  on the real tables with filtered unique indexes and pattern-dispatched triggers,
+  the cover removes 8\,\% of the indexes and 29\,\% of the insert time on Hockey
+  (27\,\% and 38\,\% without one table of accidental keys) and 28\,\% and 40\,\%
+  on VOC. With a million inserts on PostgreSQL, the cover of 30--50 random keys makes
+  inserts and updates 1.2 to 9 times faster, the gain growing with the share of
+  indexes it removes, and of 120 keys makes inserts 11 to 35 times faster on SQLite
+  and PostgreSQL, while admitting identical data. Under a prototype native index
+  for partial and certain keys, not itself a contribution, the cover still makes
+  inserts 2.5 times faster at 120 keys, a gain that does not
+  depend on the emulation; its keys license query rewrites that SQL's
+  \sql{UNIQUE} does not (Section~\ref{sec:experiments}).
 \item \emph{Implication.} The cover result rests on a complete account of
   implication: four rules are sound and complete for possible, domain, partial and
   candidate targets, and for certain targets implication is the absence of a proper
@@ -160,9 +176,8 @@ alternative identifiers, accompany every definition and theorem.
 
 {\sloppy Our first running example is the table \textsc{Staff}$\,=\,\{\mathit{Name},\allowbreak
 \mathit{DoB},\allowbreak \mathit{Salary},\allowbreak \mathit{Job}\}$, with the instance
-$i_0$ of Table~\ref{tab:i0}. The column \sql{s\_id} is a surrogate used only to
-refer to records; \emph{Name} is declared \sql{NOT NULL}, the other three columns are
-nullable.\par}
+$i_0$ of Table~\ref{tab:i0}, whose records are numbered for reference only;
+\emph{Name} is declared \sql{NOT NULL}, the other three columns are nullable.\par}
 
 
 \begin{table}[t]
@@ -171,7 +186,7 @@ nullable.\par}
 \label{tab:i0}
 \adjustbox{max width=\columnwidth}{\begin{tabular}{c l l l l}
 \toprule
-\sql{s\_id} & Name & DoB & Salary & Job \\
+\# & Name & DoB & Salary & Job \\
 \midrule
 1 & John  & \nul       & \nul & Analyst   \\
 2 & John  & 01/03/1985 & 90k  & Developer \\
@@ -188,7 +203,7 @@ tables of alternative identifiers---passport, driver licence and tax number on a
 person; player, coach and hall-of-fame identifiers on the \textsc{Master} table of
 the Hockey dataset mined in~\cite{KoehlerL25}---are where partial and certain keys
 differ most visibly, and they drive the hardness results of
-Sections~\ref{sec:nonfinite} and~\ref{sec:complexity}. Our instance $c_0$ of \textsc{Contact} records three
+Section~\ref{sec:nonfinite}. Our instance $c_0$ of \textsc{Contact} records three
 people, each with one missing channel:
 \[
 \begin{array}{lll}
@@ -205,13 +220,14 @@ We use the SQL model of~\cite{KoehlerL25}. A schema $(S,\NN)$ is a finite set $S
 of columns with a set $\NN\subseteq S$ of \sql{NOT NULL} columns; $N:=S\setminus\NN$
 are the nullable ones. An instance is a finite multiset of tuples over $S$, with
 \nul\ allowed outside $\NN$; tuples carry surrogate identifiers, so distinct tuples
-may agree everywhere. A tuple is $K$-total if it has no null on $K$.
+may agree everywhere. A tuple is $K$-total if it has no null on $K$; on $K$-total
+instances all five classes of keys on $K$ coincide.
 
 \begin{definition}[Key classes, after~\cite{KoehlerL25}]\label{def:keys}
 For $K\subseteq S$, an instance $i$ satisfies
 \begin{itemize}
 \item $\pos{K}$ iff there are no distinct $t,t'\in i$ with
-  $\nul\neq t(C)=t'(C)\neq\nul$ for all $C\in K$;
+  $t(C)=t'(C)\neq\nul$ for all $C\in K$;
 \item $\dom{K}$ iff there are no distinct $t,t'\in i$ with $t(C)=t'(C)$ for all
   $C\in K$ (where $\nul=\nul$);
 \item $\pk{K}$ iff there are no distinct $t,t'\in i$ with $t(C)=\nul$ or
@@ -233,17 +249,19 @@ $\mathit{Country}=\nul$ meaning ``any other country'' needs exactly one fall-bac
 row per product, which \sql{UNIQUE} cannot express; on $i_0$,
 $\dom{\mathit{Salary}}$ holds and $\dom{\mathit{Job}}$ fails (records 3 and 4). A
 \emph{partial} key forbids the same entity recorded once in full and once with
-gaps, a frequent form of dirty data~\cite{KoehlerL25}; on $i_0$,
+gaps, a frequent form of dirty data~\cite{KoehlerL25}, such as
+three pairs of active-voter records in Wake County, North Carolina, that agree on name, birth
+year and address except that one lacks the middle name (Section~\ref{sec:expE}); on $i_0$,
 $\pk{\mathit{Salary},\mathit{Job}}$ holds but $\pk{\mathit{Salary}}$ fails, record
-1 being subsumed by every other record. A \emph{certain} key holds however the
-nulls are filled in, uniqueness as a safety property: on a patient table
-$\ck{\mathit{Name},\mathit{DoB}}$ forbids a second ``John'' with unknown date of
-birth; on $i_0$, $\ck{\mathit{Name},\mathit{Job}}$ holds and
+1 being subsumed by every other record. A \emph{certain} key holds regardless of
+what nulls represent, uniqueness as a safety property: on a patient table
+$\ck{\mathit{Name},\mathit{DoB},\mathit{Zip}}$ forbids $(\text{John},1985,\nul)$
+next to $(\text{John},\nul,1010)$, though neither subsumes the other; on $i_0$, $\ck{\mathit{Name},\mathit{Job}}$ holds and
 $\ck{\mathit{Salary},\mathit{Job}}$ fails, records 1 and 3 being compatible. A
 \emph{candidate} key is SQL's \sql{PRIMARY KEY}; $i_0$ has none. In
 \textsc{Contact}, $\pk{\mathit{Email},\mathit{Phone}}$ says that nobody is stored
 once with both channels and once with one, and $\ck{\mathit{Email},\mathit{Phone},
-\mathit{Handle}}$ that two people differ on a channel both have.
+\mathit{Handle}}$ that any two people differ on some channel that both have.
 Figure~\ref{fig:hierarchy} summarises the minimal keys on $i_0$; the three
 $\mathit{Salary}$/$\mathit{Job}$ examples witness the strictness
 of~\eqref{eq:hierarchy}.
@@ -251,7 +269,9 @@ of~\eqref{eq:hierarchy}.
 A one-tuple instance with a null on $K\setminus\NN$ satisfies every possible,
 domain, partial and certain key but violates $\cand K$, so declaring $\cand K$
 amounts to \sql{NOT NULL} on $K$ plus $\ck K$; we assume $\cand K\in\Sig$ only for
-$K\subseteq\NN$. A \emph{key} is an expression $\mathcal C(K)$; $\Sig$
+$K\subseteq\NN$. \sql{NOT NULL} constraints belong to the schema $(S,\NN)$, not to
+$\Sig$: a cover replaces keys only, never adds or drops a \sql{NOT NULL}
+declaration, and its size counts keys. A \emph{key} is an expression $\mathcal C(K)$; $\Sig$
 \emph{implies} $\varphi$, $\Sig\models\varphi$, if every instance over $(S,\NN)$
 satisfying $\Sig$ satisfies $\varphi$.
 
@@ -275,29 +295,30 @@ So the technical core concerns possible, domain, partial and certain keys.
 \caption{Minimal keys on $i_0$ by class (each level lists the minimal keys of that
 class that are not already minimal keys of a stronger class)}
 \label{fig:hierarchy}
-\Description{}
+\Description{A chain of five levels, candidate to possible, listing the minimal keys of the Staff instance by class.}
 \end{figure}
 
 \subsection{Why implication matters: covers and indexes}\label{sec:why}
 
 Suppose a schema designer, or a key-mining tool, has produced the set
 \begin{align*}
-\Sig_0 = \{\ &\pos{\mathit{Job}},\ \dom{\mathit{Salary}},\ \pk{\mathit{Salary},\mathit{Job}},\\
-&\ck{\mathit{Name},\mathit{Job}},\ \sql{NOT NULL}(\mathit{Name})\ \}
+\Sig_0 = \{\ &\pos{\mathit{Job}},\ \dom{\mathit{Salary}},\\
+&\pk{\mathit{Salary},\mathit{Job}},\ \ck{\mathit{Name},\mathit{Job}}\ \}
 \end{align*}
-on \textsc{Staff} and asks whether $\dom{\mathit{Salary},\mathit{Job}}$ should be
-added, whether $\pos{\mathit{Job}}$ is still needed, and whether
-$\ck{\mathit{Salary},\mathit{Job}}$ follows. Each answer is an implication question,
+on \textsc{Staff} and asks whether $\dom{\mathit{Salary},\mathit{Job}}$ is
+implied, whether $\pos{\mathit{Job}}$ is implied by the rest, and whether
+$\ck{\mathit{Salary},\mathit{Job}}$ is implied. Each answer is an implication question,
 and the answers decide which \sql{UNIQUE} indexes exist and which triggers fire on
 every insert. Section~\ref{sec:indexing} explains how each class is enforced with the
 index types that commercial systems offer; the results of
 Sections~\ref{sec:axiom} and~\ref{sec:limits} say when such an index is redundant,
 and how hard it is to find out. For $\Sig_0$ the answers are: yes, $\dom{\mathit{Salary},
-\mathit{Job}}$ is implied (by weakening $\pk{\mathit{Salary},\mathit{Job}}$); no,
-$\pos{\mathit{Job}}$ is not implied by the rest; and no, $\ck{\mathit{Salary},
+\mathit{Job}}$ is implied (by weakening $\pk{\mathit{Salary},\mathit{Job}}$), so
+declaring it adds nothing; no,
+$\pos{\mathit{Job}}$ is not implied by the rest, so it stays; and no, $\ck{\mathit{Salary},
 \mathit{Job}}$ does not follow---the construction in the proof of
 Theorem~\ref{thm:certain} produces the counterexample $\{(\text{Eve},\nul,\nul,\text{Clerk}),
-(\text{Eve},\nul,80\mathrm k,\nul)\}$, in which the two records are compatible on
+(\text{Fay},\nul,80\mathrm k,\nul)\}$, in which the two records are compatible on
 $\mathit{Salary}$ and $\mathit{Job}$ but neither subsumes the other.
 
 Run on $i_0$, per-class key mining~\cite{KoehlerL25} returns ten minimal keys:
@@ -314,8 +335,9 @@ these ten keys, but it removes the certain key for a different reason: no single
 key implies it, yet the three partial keys do, because their hypergraph on the
 three channels is a triangle, which has no proper 2-colouring
 (Theorem~\ref{thm:certain}). This saves the 8 filtered indexes of the certain
-key, 15 instead of 26 indexes in all. Experiment~E finds the first pattern on the
-21 tables of a real database; Experiment~C shows how often the second arises when
+key, 15 instead of 26 indexes in all. Experiment~E finds the first kind of redundancy, a weaker key on the columns of a
+stronger one, on the
+21 tables of the Hockey database; Experiment~C shows how often the second arises when
 binary partial keys accumulate. The same shape arises on real data: on the VOC
 database, three mined partial keys of \textsc{voyages} imply a four-column certain
 key that none of them implies alone (Section~\ref{sec:expE}), although there a
@@ -341,35 +363,51 @@ has the same effect. So $\dom{\mathit{Country},\mathit{Product}}$ of the pricing
 example costs one ordinary index.
 
 \paragraph{Partial keys.} A partial key is enforced by one \emph{filtered} (partial)
-unique index per null pattern plus a containment check. For $\pk{K}$ with nullable
+unique index per null pattern plus a subsumption check. For $\pk{K}$ with nullable
 columns $N_K$, create for each $P\subseteq N_K$ the index
 \[
-\sql{UNIQUE}(K\setminus P)\ \sql{WHERE}\ \bigwedge_{A\in P} A\ \sql{IS NULL}
+\sql{UNIQUE}(K\setminus P)\ \sql{WHERE}\ \bigwedge_{A\in P} A\ \sql{IS NULL}\wedge
+\bigwedge_{A\in N_K\setminus P} A\ \sql{IS NOT NULL}
 \]
 (SQL Server, PostgreSQL, SQLite and Db2 support filtered
-indexes~\cite{SQLServerDoc,PGDoc,Db2Doc}). These indexes
-reject two records with the same null pattern that agree elsewhere. A record $t$
+indexes~\cite{SQLServerDoc,PGDoc,Db2Doc}). Each record lies in exactly one of
+them, the index of its own pattern, so the family stores every record once. These
+indexes reject two records with the same null pattern that agree elsewhere. A new record $t$
 with null pattern $P$ is subsumed by a record $t'$ with a pattern $P'\subsetneq P$
-iff $t$ and $t'$ agree on $K\setminus P$; this is a point lookup of $t$'s non-null
-values in the index for pattern $P'$, restricted to its leading columns. A \sql{BEFORE
-INSERT} trigger issues one such lookup per $P'\subseteq P$, i.e.\ at most $2^{|P|}$
-index probes, which is small because $|P|$ is the number of nulls in the new record.
-In $i_0$, $\pk{\mathit{Salary},\mathit{Job}}$ needs the four indexes for
-$P\in\{\emptyset,\{\mathit{Salary}\},\{\mathit{Job}\},\{\mathit{Salary},
-\mathit{Job}\}\}$, and inserting $(\text{Ann},\nul,90\mathrm k,\nul)$ probes the
-indexes for $\emptyset$ and $\{\mathit{Job}\}$ with the value $90\mathrm k$, finds
-record 2, and rejects the insert.
+iff they agree on $K\setminus P$, and subsumes a record $t'$ with a pattern
+$P'\supsetneq P$ iff they agree on $K\setminus P'$. A \sql{BEFORE INSERT} trigger
+therefore probes the index of every pattern comparable with $P$, at most
+$2^{|P|}+2^{|N_K\setminus P|}-2$ probes. A probe for $P'\supsetneq P$ binds every
+column of its index and is a point lookup. A probe for $P'\subsetneq P$ binds only
+$K\setminus P$, so the columns of $P\setminus P'$ are free: it is a point lookup on
+the bound columns that precede the first free one, and a scan of the filtered index
+if a free column comes first. In $i_0$, $\pk{\mathit{Salary},\mathit{Job}}$ needs
+the four indexes for $P\in\{\emptyset,\{\mathit{Salary}\},\{\mathit{Job}\},
+\{\mathit{Salary},\mathit{Job}\}\}$; inserting $(\text{Ann},\nul,90\mathrm k,\nul)$
+looks up $90\mathrm k$ in the index for $\emptyset$, whose leading column is
+$\mathit{Salary}$, finds record 2, and rejects the insert.
 
-\paragraph{Certain keys.} A certain key forbids \emph{compatible} records, which need
-not have nested null patterns, so index probes must look in both directions. With the
-same family of filtered indexes, a new record $t$ with non-null columns
+\paragraph{Certain keys.} A certain key forbids \emph{compatible} records, whose null
+patterns need not be comparable, so the trigger probes the index of every pattern,
+not only of the comparable ones. With the same family of filtered indexes, a new record $t$ with non-null columns
 $K\setminus P$ is compatible with an existing $t'$ iff for every $A\in K\setminus P$,
 $t'(A)=t(A)$ or $t'(A)=\nul$. For each $P'\subseteq N_K$ the trigger probes the
 index for $P'$ with the values of $t$ on $(K\setminus P)\setminus P'$, giving
-$2^{|N_K|}$ probes in the worst case. K\"ohler et al.~\cite{KLLZ16} show that for
-certain keys with few nullable columns this is competitive with a single
-\sql{UNIQUE} index; rule R4 of Section~\ref{sec:rules} explains why: with one
-nullable column a certain key \emph{is} a partial key and needs only two indexes.
+$2^{|N_K|}$ probes in the worst case; as for partial keys, the columns of
+$P\setminus P'$ are free. K\"ohler et al.~\cite{KLLZ16} show that this is
+competitive with a single \sql{UNIQUE} index when the key has \sql{NOT NULL}
+columns, because every probe can search on them.
+
+\paragraph{Column order.} A probe stalls at its first free column, so each index
+lists the \sql{NOT NULL} columns of $K$ first, which every probe binds, and then the
+nullable columns from the least to the most often null. A key with selective
+\sql{NOT NULL} columns is then checked by point lookups alone; a key whose columns
+are all nullable can still fall back to scans. A native implementation could avoid
+them in two ways: (A) a filtered index on every $Q\subseteq K$ holding the records
+non-null on $Q$, which turns all probes for $P'\subsetneq P$ into one point lookup in
+the index for $K\setminus P$ but writes each record into up to $2^{|K|}-1$ indexes;
+or (B) $|K|$ indexes per key, each led by a different column, so that every probe
+binds a leading column, at the price of lookups that may bind a single column only.
 
 \paragraph{Candidate keys.} A candidate key is a \sql{UNIQUE} index on \sql{NOT
 NULL} columns, the base case in which all five techniques coincide, as the five
@@ -378,7 +416,11 @@ classes do on \sql{NOT NULL} columns (rule R3).
 \paragraph{An emulation.} These techniques use only features that major systems
 already offer, to emulate what a system with native partial and certain keys would
 do internally. The value of a cover does not depend on them: any enforcement whose
-cost grows with the number of declared keys gains from enforcing fewer.
+cost grows with the number of declared keys gains from enforcing fewer. Under
+concurrency the trigger probes need \sql{SERIALIZABLE} isolation or a table lock, as
+two \sql{READ COMMITTED} inserts can pass each other's probe; the native index
+of Experiment~D waits on conflicting in-progress inserts as a unique index does.
+Experiment~D measures both under concurrent inserts.
 
 \paragraph{What implication buys.} Each redundant key saves its indexes and probes.
 The number of indexes for a partial or certain key grows as $2^{|N_K|}$, so detecting
@@ -434,15 +476,15 @@ described by a type per column: \bn\ (both null), \eq\ (equal non-null values),
 \dd\ on \sql{NOT NULL} columns. A pair satisfies $\ck L$ iff some column of $L$ is
 \dd; $\pk L$ iff $L$ has a column of type \vn\ or \dd\ and one of type \nv\ or \dd;
 $\dom L$ iff some column of $L$ is not \bn\ or \eq; $\pos L$ iff some column of $L$
-is not \eq\ (Lemma~\ref{lem:typing}). No key is valid, so a sound inference system
+is not \eq\ (Lemma~\ref{lem:typing}). No key holds in every instance, so a sound inference system
 has no axioms.
 
-\subsection{Inference Rules and Soundness}\label{sec:rules}
+\subsection{Inference rules and soundness}\label{sec:rules}
 %=====================================================================
 
 Let $\mathcal R$ consist of the rules in Table~\ref{tab:rules}, where $X,K,L$ range
-over column sets, $A,B,C$ over columns, and side conditions refer to the schema's
-$\NN$.
+over column sets, $A,B,C$ over columns, $\mathcal C,\mathcal C'$ over classes ordered by
+strength as in~\eqref{eq:hierarchy}, and side conditions refer to the schema's $\NN$.
 
 \begin{table}[t]
 \centering
@@ -452,13 +494,9 @@ $\NN$.
 \toprule
 Rule & Premises & Conclusion & Side condition \\
 \midrule
-R1 (weakening) & $\ck{K}$ & $\pk{K}$ & \\
- & $\pk{K}$ & $\dom{K}$ & \\
- & $\dom{K}$ & $\pos{K}$ & \\
- & $\cand{K}$ & $\ck{K}$ & \\
- & $\ck{K}$ & $\cand{K}$ & $K\subseteq\NN$ \\
-R2 (superkey) & $\mathcal C(K)$ & $\mathcal C(KL)$ & $KL\subseteq\NN$ if $\mathcal C$ is candidate \\
-R3 (total collapse) & $\pos{K}$ & $\ck{K}$ & $K\subseteq\NN$ \\
+R1 (weakening) & $\mathcal C(K)$ & $\mathcal C'(K)$ & $\mathcal C$ stronger than $\mathcal C'$ \\
+R2 (superkey) & $\mathcal C(K)$ & $\mathcal C(KL)$ & $\mathcal C$ not candidate \\
+R3 (total collapse) & $\pos{K}$ & $\mathcal C(K)$ & $K\subseteq\NN$ \\
 R4 (one-nullable collapse) & $\pk{XA}$ & $\ck{XA}$ & $X\subseteq\NN$ \\
 R5 (triangle) & $\pk{XAB},\pk{XAC},\pk{XBC}$ & $\ck{XABC}$ & $X\subseteq\NN$ \\
 \bottomrule
@@ -483,12 +521,12 @@ Every rule of $\mathcal R$ is sound.
 Declare $\pk{\mathit{Email},\mathit{Phone}}$, $\pk{\mathit{Email},\mathit{Handle}}$
 and $\pk{\mathit{Phone},\mathit{Handle}}$: nobody is stored once with two channels
 and once with only one of them. R5 derives $\ck{\mathit{Email},\mathit{Phone},
-\mathit{Handle}}$: any two records differ on a channel both have. Concretely, a
-second record compatible with $(\mathtt{a@x.org},\ \nul,\ \mathtt{@ann})$ on all
-three columns must have a value or null on each; if it has $\mathtt{a@x.org}$ it is
-subsumed or subsuming on $\{\mathit{Email},\mathit{Handle}\}$ unless its handle is
-\emph{different} and non-null, which breaks compatibility. Working through the
-cases is exactly the pigeonhole argument. The three binary partial keys thus make the
+\mathit{Handle}}$: any two records differ on a channel both have. Indeed, take two
+compatible records, so no channel has two distinct values. Each pair of channels
+must then contain a channel null in the first record only and one null in the second
+only, or one record subsumes the other on that pair; so each of the three channels
+is null in exactly one record, and some two of them are null in the same
+record---the pigeonhole---which leaves that pair without the required split. The three binary partial keys thus make the
 $2^3=8$ filtered indexes of Section~\ref{sec:indexing} for the certain key
 redundant. All four keys hold on the instance $c_0$ of
 Section~\ref{sec:motivation}: no row is subsumed by another on any pair of
@@ -517,14 +555,14 @@ $\varphi\notin\Sig^+$ then $\Sig\not\models\varphi$.
 
 \begin{corollary}\label{cor:fragments}
 Every set of classes not containing both partial and certain keys is finitely
-axiomatised by those rules among R1--R4 that mention only its classes. In
-particular possible and certain keys with \sql{NOT NULL} are axiomatised by R1, R2,
-R3, recovering~\cite{KLLZ16}.
+axiomatised by the instances of R1--R4 that mention only its classes. In
+particular possible and certain keys with \sql{NOT NULL} are axiomatised by the
+instances of R1--R3 on these two classes, recovering~\cite{KLLZ16}.
 \end{corollary}
 \noindent\emph{Proof idea.} Without partial premises condition (iii) of Theorem~\ref{thm:certain} is void, and (i), (ii) are derivable by R1--R3. Full proof in Appendix~\ref{app:proofs}.
 
 
-\subsection{Certain Keys and Hypergraph 2-Colourability}\label{sec:certain}
+\subsection{Certain keys and hypergraph 2-colourability}\label{sec:certain}
 %=====================================================================
 
 For a certain target, implication from partial keys is a 2-colouring problem. Fix
@@ -563,11 +601,11 @@ implied.
 implied, in agreement with Example~3 of~\cite{KoehlerL25}.
 \end{example}
 
-The rules of Section~\ref{sec:rules} are the smallest cases of (iii): R3 and R4 are
-the edges of size zero and one, R5 the 3-cycle. Theorem~\ref{thm:certain} also shows what is
-missing: every non-2-colourable hypergraph without a triangle, such as a 5-cycle,
-yields an implication that R1--R5 cannot derive; adding one rule per such
-hypergraph gives a complete infinite system
+Partial premises with no nullable column or one are edges of size zero and one,
+which R3 and R4 handle; R5 is the 3-cycle. Theorem~\ref{thm:certain} also shows
+what is missing: every edge-critical non-2-colourable hypergraph other than these,
+such as a 5-cycle, yields an implication that R1--R5 cannot derive; adding one rule
+per such hypergraph gives a complete infinite system
 (Corollary~\ref{cor:infinite}, Appendix~\ref{app:examples}).
 
 
@@ -593,13 +631,13 @@ particular, neither class is finitely axiomatisable.
 
 The failure is not the unbounded-chain phenomenon of functional dependencies:
 every key implied by a proper sub-cycle is a mere superkey of a premise, so no
-useful intermediate key exists. It is also sharp, as the fragments below show.
+useful intermediate key exists. It is also sharp, as Theorem~\ref{thm:maximal-classes} shows.
 
 \begin{theorem}\label{thm:conp}
 Deciding $\Sig\models\varphi$ for the combined class of keys with \sql{NOT NULL}
 constraints is coNP-complete.
 \end{theorem}
-\noindent\emph{Proof idea.} Membership: a counter-instance is a type assignment, checked in linear time. Hardness: from 2-colourability of 3-uniform hypergraphs, with one ternary partial key per edge and the certain key on all vertices as target. Full proof in Appendix~\ref{app:proofs}.
+\noindent\emph{Proof idea.} Membership: a counter-instance is a type assignment, checked in linear time. Hardness: from 2-colourability of 3-uniform hypergraphs~\cite{Lovasz73}, with one ternary partial key per edge and the certain key on all vertices as target. Full proof in Appendix~\ref{app:proofs}.
 
 Table~\ref{tab:complexity} summarises the tractable cases: only partial keys
 with three or more nullable columns interacting with a certain target are hard.
@@ -631,21 +669,20 @@ implication problem with premises and target in $\mathcal F$, over schemas with
 arbitrary \sql{NOT NULL} constraints.
 
 \begin{theorem}\label{thm:maximal-classes}
-The $\mathcal F$-fragment is finitely axiomatisable iff $\mathcal F$ does not contain
+An $\mathcal F$-fragment is finitely axiomatisable iff $\mathcal F$ does not contain
 both partial and certain keys. Consequently the maximal finitely axiomatisable
 fragments are exactly
 \begin{align*}
 \mathcal F_1&=\{\text{possible},\text{domain},\text{partial},\text{candidate}\}\quad\text{and}\\
 \mathcal F_2&=\{\text{possible},\text{domain},\text{certain},\text{candidate}\}.
 \end{align*}
-$\mathcal F_1$ is axiomatised by R1, R2 and the instance $\pos{K}\vdash\cand{K}$
-for $K\subseteq\NN$ of R3; $\mathcal F_2$ by R1, R2 and R3.
+Each is axiomatised by the instances of R1--R3 that mention only its classes.
 \end{theorem}
-\noindent\emph{Proof idea.} With both partial and certain keys Theorem~\ref{thm:nonfinite} applies. Without one of them condition (iii) of Theorem~\ref{thm:certain} is void or trivial, and R1--R4 are complete. Full proof in Appendix~\ref{app:proofs}.
+\noindent\emph{Proof idea.} With both partial and certain keys Theorem~\ref{thm:nonfinite} applies. Without one of them condition (iii) of Theorem~\ref{thm:certain} is void, R4 and R5 mention both classes, and the remaining instances of R1--R3 are complete by Theorem~\ref{thm:complete} and Corollary~\ref{cor:fragments}. Full proof in Appendix~\ref{app:proofs}.
 
 $\mathcal F_2$ is the system of~\cite{KLLZ16} extended by domain keys, which
-therefore come for free; $\mathcal F_1$ shows that partial keys are equally harmless
-as long as certain keys are not targets.
+therefore come for free; Theorem~\ref{thm:complete} shows that partial keys are
+equally harmless as long as certain keys are not targets.
 
 \section{Minimal and Optimal Covers Are Unique}\label{sec:covers}
 %=====================================================================
@@ -673,8 +710,9 @@ it contains no two equivalent keys.
 
 Theorems~\ref{thm:complete} and~\ref{thm:certain} turn directly into a decision
 procedure for the whole class. It is polynomial in the sizes of $\Sig$ and $S$ and
-exponential only in the number of partial keys with three or more nullable columns
-inside the target key, which is also where the coNP lower bound of
+exponential only in the number of nullable columns of the target key, and only
+when partial keys with three or more nullable columns lie inside it, which is also
+where the coNP lower bound of
 Theorem~\ref{thm:conp} lives. Throughout, $\|\Sig\|:=\sum_{\mathcal C(L)\in\Sig}|L|$,
 $n:=|S|$, and keys are bit vectors, so a subset test costs $O(n)$.
 
@@ -691,7 +729,7 @@ partial $\succ$ domain $\succ$ possible.
 \caption{\textsc{Implies}$((S,\NN),\Sig,\mathcal C(K))$ --- decides $\Sig\models\mathcal C(K)$}
 \label{alg:decide}
 \begin{algorithmic}[1]
-\State \textbf{for each} $\cand{L}\in\Sig$: $\NN\gets\NN\cup L$ and replace $\cand{L}$ by $\ck{L}$
+\State \textbf{for each} $\cand{L}\in\Sig$: replace $\cand{L}$ by $\ck{L}$ \Comment{$L\subseteq\NN$; Lemma~\ref{lem:cand}}
 \If{$\mathcal C=$ candidate} \Comment{Lemma~\ref{lem:cand}}
   \State \textbf{if} $K\not\subseteq\NN$ \textbf{then return} \textsc{false}
   \State $\mathcal C\gets$ certain
@@ -714,13 +752,19 @@ partial $\succ$ domain $\succ$ possible.
 
 Algorithm~\ref{alg:colour} decides
 whether a hypergraph $(V,E)$ has no proper 2-colouring. It returns true at once if
-some edge has at most one vertex, keeps only minimal edges, and splits $E$ into the
-binary edges $E_2$ and the larger edges $e_1,\dots,e_h$. It then branches: for each
-$e_j$ it fixes a vertex $v\in e_j$ and tries, for every $w\in e_j\setminus\{v\}$,
-adding the binary edge $\{v,w\}$ (some $w$ must receive the colour opposite to
-$v$); a leaf of the branching holds a graph $F\supseteq E_2$ on $V$, and the
-hypergraph is non-2-colourable iff every leaf's $F$ is non-bipartite, which a
-linear-time breadth-first search decides.
+some edge has at most one vertex, keeps only minimal edges, and colours each
+connected component separately by a backtracking search over vertices. A node of
+the search holds a partial colouring $(R,B)$, the red and the blue vertices, and the
+edges not yet properly coloured. It first propagates: an edge that has received both
+colours is dropped, an edge lying inside $R$ or inside $B$ ends the branch, and an
+edge with a single uncoloured vertex forces that vertex to the colour the edge
+lacks. It then drops every edge with an uncoloured vertex that lies in no other
+remaining edge, since that vertex, coloured last, can always complete the edge. If
+edges remain, it branches on the uncoloured vertex in the most and smallest edges
+and tries both colours. The two colours are symmetric, so the search for a component
+starts with one of its vertices coloured red. Binary edges need no special
+treatment: a coloured endpoint forces the other one, so on a graph propagation alone
+decides bipartiteness.
 
 \begin{algorithm}[t]
 \caption{\textsc{NotTwoColourable}$(V,E)$ --- decides whether $(V,E)$ has no proper
@@ -730,17 +774,24 @@ linear-time breadth-first search decides.
 \State \textbf{if} some $e\in E$ has $|e|\le1$ \textbf{then return} \textsc{true}
 \State remove from $E$ every edge that strictly contains another edge
   \Comment{minimal edges suffice}
-\State remove from $V$ every vertex lying in no edge
-\State $E_2\gets\{e\in E:|e|=2\}$;\quad $E_3\gets\{e\in E:|e|\ge3\}=\{e_1,\dots,e_h\}$
-\State \Return \textsc{Branch}$(1,E_2)$
-\Statex
-\Procedure{Branch}{$j,F$} \Comment{$F$: a graph on $V$; $e_1,\dots,e_{j-1}$ already split}
-  \State \textbf{if} $j>h$ \textbf{then return not} \textsc{Bipartite}$(V,F)$
-  \State let $v$ be a fixed vertex of $e_j$
-  \ForAll{$w\in e_j\setminus\{v\}$} \Comment{some $w$ gets the colour opposite to $v$}
-    \State \textbf{if not} \textsc{Branch}$(j+1,F\cup\{\{v,w\}\})$ \textbf{then return} \textsc{false}
-  \EndFor
-  \State \Return \textsc{true}
+\ForAll{connected components $E'$ of $(V,E)$}
+  \State $u\gets$ a vertex of $E'$ \Comment{colours are symmetric}
+  \State \textbf{if not} \textsc{Colourable}$(\{u\},\emptyset,E')$ \textbf{then return} \textsc{true}
+\EndFor
+\State \Return \textsc{false}
+\Procedure{Colourable}{$R,B,F$} \Comment{$F$: open edges}
+  \Repeat \Comment{propagation}
+    \State remove from $F$ every edge that meets both $R$ and $B$
+    \State \textbf{if} some $e\in F$ has $e\subseteq R$ or $e\subseteq B$ \textbf{then return} \textsc{false}
+    \State \textbf{if} $e\in F$ has one uncoloured $u$, give $u$ the colour $e$ lacks
+  \Until{this pass coloured no vertex}
+  \Repeat \Comment{private: uncoloured, in one edge of $F$}
+    \State remove from $F$ each edge with a private vertex
+  \Until{$F$ is unchanged}
+  \State \textbf{if} $F=\emptyset$ \textbf{then return} \textsc{true}
+  \State $v\gets$ the uncoloured vertex maximising $\sum_{v\in e\in F}\frac{1}{|e\setminus(R\cup B)|}$
+  \State \Return \textsc{Colourable}$(R\cup\{v\},B,F)$
+  \Statex \hspace{\algorithmicindent}\hspace{3.2em}\textbf{or} \textsc{Colourable}$(R,B\cup\{v\},F)$
 \EndProcedure
 \end{algorithmic}
 \end{algorithm}
@@ -754,19 +805,17 @@ Algorithm~\ref{alg:decide} returns \textsc{true} iff $\Sig\models\mathcal C(K)$.
 
 \begin{theorem}[Running time and space]\label{thm:algcost}
 Let $N_K$ be the nullable columns of the target, $E$ the minimal edge set of
-$H(\Sig,K)$ after lines~1--3 of Algorithm~\ref{alg:colour}, $m:=|E|$, and
-$e_1,\dots,e_h$ its edges of size at least three. Algorithm~\ref{alg:decide} runs in
-time
+$H(\Sig,K)$ after lines~1--2 of Algorithm~\ref{alg:colour}, and $m:=|E|$.
+Algorithm~\ref{alg:decide} runs in time
 \[
-O\bigl(\,|\Sig|\cdot n\ +\ m^2 n\ +\ \textstyle\prod_{j=1}^{h}(|e_j|-1)\cdot(|N_K|+m)\,\bigr)
+O\bigl(\,|\Sig|\cdot n\ +\ m^2 n\ +\ 2^{|N_K|-1}\,(|N_K|+m)\,m\,n\,\bigr)
 \]
-and $O(|\Sig|\cdot n+m\,n+h)$ bits of space. It is linear for a possible,
+and $O(|\Sig|\cdot n+m\,n+|N_K|\,(m+n))$ bits of space. It is linear for a possible,
 domain, partial or candidate target, polynomial for a certain target when every
-partial key has at most two nullable columns ($h=0$), and fixed-parameter
-tractable in $|N_K|$ in general, the exponential factor being at most
-$2^{|N_K|-1}$.
+partial key has at most two nullable columns, and fixed-parameter tractable in
+$|N_K|$ in general.
 \end{theorem}
-\noindent\emph{Proof idea.} One subset test per premise; for a certain target, one branch per choice of a pair from each edge of three or more vertices, each followed by a linear bipartiteness test. Full proof in Appendix~\ref{app:proofs}.
+\noindent\emph{Proof idea.} One subset test per premise; for a certain target, a search over the colourings of $N_K$ that fixes one colour per component, hence at most $2^{|N_K|}$ nodes, each doing polynomial propagation; on a graph, propagation alone colours each component, so the search has one node per component. Full proof in Appendix~\ref{app:proofs}.
 
 
 
@@ -785,7 +834,7 @@ $\mathcal C_1\prec\mathcal C_2\prec\mathcal C_3$ for the three non-candidate
 classes of the fragment in increasing strength (possible $\prec$ domain $\prec$
 partial in $\mathcal F_1$, possible $\prec$ domain $\prec$ certain in
 $\mathcal F_2$). By Theorem~\ref{thm:complete}, and Theorem~\ref{thm:certain} with
-$E=\emptyset$ for $\mathcal F_2$,
+an edgeless $H(\Sig,K)$ for $\mathcal F_2$,
 \begin{equation}\label{eq:impl-frag}
 \begin{split}\Sig\models\mathcal C(K)\iff{}&\text{some }\mathcal C'(L)\in\Sig\text{ has }L\subseteq K\\
 &\text{and }(\mathcal C'\succeq\mathcal C\ \text{or}\ L\subseteq\NN),\end{split}
@@ -825,7 +874,7 @@ set. Algorithm~\ref{alg:cover-frag} computes it in one pass.
 optimal cover in $\mathcal F_1$ or $\mathcal F_2$}
 \label{alg:cover-frag}
 \begin{algorithmic}[1]
-\State \textbf{for each} $\cand{L}\in\Sig$: $\NN\gets\NN\cup L$; replace $\cand{L}$ by $\mathcal C_3(L)$
+\State \textbf{for each} $\cand{L}\in\Sig$: replace $\cand{L}$ by $\mathcal C_3(L)$ \Comment{$L\subseteq\NN$}
 \State \textbf{for each} $\mathcal C(L)\in\Sig$ with $L\subseteq\NN$: replace $\mathcal C$ by $\mathcal C_3$
 \State remove duplicate keys
 \State sort $\Sig$ by $|L|$ ascending, ties by class descending ($\mathcal C_3$ first)
@@ -871,7 +920,7 @@ equivalence, the unique minimal and the unique optimal cover of $\Sig_0$.
 cover in the combined class}
 \label{alg:cover-general}
 \begin{algorithmic}[1]
-\State \textbf{for each} $\cand{L}\in\Sig$: $\NN\gets\NN\cup L$; replace $\cand{L}$ by $\ck L$
+\State \textbf{for each} $\cand{L}\in\Sig$: replace $\cand{L}$ by $\ck L$ \Comment{$L\subseteq\NN$}
 \State \textbf{for each} $\mathcal C(L)\in\Sig$ with $L\subseteq\NN$: replace $\mathcal C$ by certain
 \State \textbf{for each} $\pk L\in\Sig$ with $|L\setminus\NN|\le1$: replace by $\ck L$ \Comment{R4}
 \State remove duplicate keys
@@ -896,9 +945,9 @@ equivalence. Let $c$ be the number of certain keys in $\Sig$, let $m\le|\Sig|$
 bound the number of partial keys inside any one certain key, and let $b$ bound the
 number of nullable columns of a certain key in $\Sig$. The algorithm runs in time
 \[
-O\bigl(|\Sig|^2\,n\ +\ c\,(m^2n+2^{\,b-1}(b+m))\bigr)
+O\bigl(|\Sig|^2\,n\ +\ c\,(m^2n+2^{\,b-1}(b+m)\,m\,n)\bigr)
 \]
-and $O(|\Sig|\,n+m\,n+b)$ bits of space. It is polynomial when every partial key
+and $O(|\Sig|\,n+m\,n+b\,(m+n))$ bits of space. It is polynomial when every partial key
 has at most two nullable columns, or when $b$ is bounded; in general each
 redundancy test of a certain key is a coNP-complete problem
 (Theorem~\ref{thm:conp}).
@@ -915,7 +964,8 @@ triangle, which is not 2-colourable; the key is removed. Each binary partial key
 is then tested by the scan of line~8 against the other two and kept. The cover is
 the triangle of partial keys: three keys and six attribute occurrences instead of
 five keys and thirteen occurrences; in terms of Section~\ref{sec:indexing}, the
-$2^3+2^4$ filtered indexes of the two certain keys are replaced by $3\cdot2^2$.
+$2^3+2^4$ filtered indexes of the two certain keys go, leaving the $3\cdot2^2$ of the
+partial keys.
 \par}
 \end{example}
 
@@ -929,13 +979,12 @@ key, exponential only in the number of its nullable columns.
 \section{Experiments}\label{sec:experiments}
 %=====================================================================
 
-We implemented the algorithms of Sections~\ref{sec:algorithms}
-and~\ref{sec:covers} and ran five experiments: three on random key sets
+We implemented the algorithms of Section~\ref{sec:covers} and ran six experiments: three on random key sets
 (cover size, attribute occurrences and running time under growing input size,
 growing schema size, and growing interaction between partial and certain keys),
 one that enforces the input and its cover in a database and measures the cost
-of inserts, updates and integrity checks, and one on the keys mined from a real
-database. All code, the complete logs of every
+of inserts, updates and integrity checks, one on keys mined from real
+data, and one on the query rewrites their keys license. All code, the complete logs of every
 generated input with its cover, and the raw measurements accompany the paper;
 Appendix~\ref{app:repro} describes them.
 
@@ -943,11 +992,18 @@ Appendix~\ref{app:repro} describes them.
 
 \paragraph{Implementation.} Column sets are bit vectors; Algorithms~\ref{alg:decide},
 \ref{alg:colour}, \ref{alg:cover-frag} and~\ref{alg:cover-general} are implemented
-in Python~3.12 exactly as printed (\texttt{keys.py}, about 150 lines). It was validated on the examples of the paper and on 600 random instances over
+in Python exactly as printed (\texttt{keys.py}, about 170 lines). It was validated on the examples of the paper and on 600 random instances over
 3--7 columns, whose covers were checked equivalent to the input and non-redundant
 by independent implication tests.
-All runs are single-threaded on one CPU core of a Linux container; times are wall
-clock.
+All runs used an Apple M5 Max laptop (macOS, Python~3.9, SQLite~3.54,
+PostgreSQL~18.6). PostgreSQL ran with an open-file limit of 10{,}240
+and \texttt{max\_files\_per\_process} 9000: under the macOS default of 256 open
+files, a backend writing to a table with hundreds of filtered indexes closes and
+reopens index files on every statement, which slowed the input's inserts some
+70-fold and would have inflated the cover's gains. Each run has one single-threaded client except the concurrency runs of
+Appendix~\ref{app:native}, and parallel
+query is at PostgreSQL's defaults, which the plans on the replicated tables of
+Experiment~F use; times are wall clock.
 
 \paragraph{Random key sets.} For a schema with $n$ columns, the first $k$ of which
 are \sql{NOT NULL}, a random key is drawn as follows: its size is
@@ -955,7 +1011,7 @@ $2+\mathrm{Bin}(n-2,0.3)$ (about $0.3n+1.4$ columns on average), its columns are
 uniform sample of that size, and its class is uniform over the classes of the
 fragment---possible, domain, partial for $\mathcal F_1$; possible, domain, certain
 for $\mathcal F_2$; all four for the combined class. Each configuration is repeated
-with 10 independent sets (5 for the database experiment); we report means.
+with 10 independent sets (5 for the database experiment); we report means over the sets.
 
 \subsection{Experiment A: growing input size}
 
@@ -969,10 +1025,38 @@ pair of the input). Second, the ratio of attribute occurrences cover/input drops
 from about $0.7$ at $|\Sig|=25$ to $0.01$ at $|\Sig|=3200$: the redundant keys are
 the wide ones. Third, the running times confirm Theorems~\ref{thm:cover-frag-alg}
 and~\ref{thm:cover-general-alg}: the one-pass algorithm for $\mathcal F_1$ and
-$\mathcal F_2$ needs 5\,ms for 3200 keys, and the general algorithm, which runs the
-colouring test once per certain key, needs 155\,ms; the extra factor is the cost
+$\mathcal F_2$ needs 3\,ms for 3200 keys, and the general algorithm, which runs the
+colouring test once per certain key, needs 87\,ms; the extra factor is the cost
 of building the hypergraph for each tested certain key, and no instance triggered
-more than a handful of branches in Algorithm~\ref{alg:colour}. The three fragments
+more than three search nodes in Algorithm~\ref{alg:colour}. Even a certain key on
+24 nullable columns against random ternary partial keys at the 2-colourability
+threshold (2--3 per column) needs at most 31 nodes and 1.3\,ms. Table~\ref{tab:alg2stress} gives the details: across 20 random
+instances per density the share of implied targets switches from none to all
+between 2 and 3 edges per column, as for random 3-uniform hypergraphs, and the
+search stays small throughout; on the complete hypergraph the time is spent
+building it from up to 2024 keys, not searching (5 nodes).
+
+\begin{table}[t]
+\centering
+\caption{Algorithm~\ref{alg:colour} under stress: $\ck{S}$ on $n$ nullable columns against 20 random sets of
+$cn$ ternary partial keys for each $c\in\{1,1.5,2,2.5,3,4,6\}$, and against all $\binom n3$ of them.}
+\label{tab:alg2stress}
+\small
+\begin{tabular}{r r r r r}
+\toprule
+ & \multicolumn{2}{c}{random, worst over $c$} & \multicolumn{2}{c}{complete} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+$n$ & nodes & ms & keys & ms \\
+\midrule
+8 & 7 & 0.25 & 56 & 0.3 \\
+12 & 11 & 0.54 & 220 & 2.2 \\
+16 & 15 & 0.98 & 560 & 11.4 \\
+20 & 19 & 1.12 & 1140 & 41.5 \\
+24 & 31 & 1.69 & 2024 & 124.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+ The three fragments
 produce covers of almost the same size because random inputs are dominated by
 subset relations, where the class only decides which of two comparable keys
 survives.
@@ -984,8 +1068,15 @@ survives.
 to 3200 random keys. Cover size (left), attribute occurrences of the cover relative
 to the input (middle), running time (right).}
 \label{fig:expA}
-\Description{}
+\Description{Three line charts against input size: cover size, cover-to-input ratio of attribute occurrences, and running time, for the three fragments.}
 \end{figure*}
+
+\subsection{Experiment B: growing schema}
+
+Experiment~B fixes $|\Sig|=200$ and $k=\lfloor n/3\rfloor$ and grows the schema from
+8 to 32 columns (Appendix~\ref{app:expB} has the figure): random keys over many
+columns rarely nest, so the cover keeps 12\,\% of the input at $n=8$ but 98\,\% at
+$n=32$, and the running time stays below 3\,ms.
 
 \subsection{Experiment C: partial keys against certain keys}\label{app:expC}
 
@@ -1001,8 +1092,9 @@ With no partial keys, 44 survive (the others contain a smaller certain key). Wit
 certain key is implied by the odd cycles among its partial keys, and the cover
 consists of the $p$ binary partial keys alone. Each certain key costs an index
 family of size $2^{|N_K|}$ (Section~\ref{sec:indexing}), so this is where the
-general cover algorithm pays off most, and it does so in $1$--$4$\,ms for the whole
-input, because each colouring test is a bipartiteness check on at most 8 vertices.
+general cover algorithm pays off most, and it does so in at most 2.2\,ms for the whole
+input, because each colouring test is on a graph of at most 8 vertices, which
+propagation decides without branching.
 
 
 \begin{figure}[t]
@@ -1012,13 +1104,8 @@ input, because each colouring test is a bipartiteness check on at most 8 vertice
 plus $p$ random binary partial keys: certain keys surviving in the cover (left),
 running time (right).}
 \label{fig:expC}
-\Description{}
+\Description{Two line charts: certain keys kept in the cover fall from 44 to 0 as the number of binary partial keys grows from 0 to 120; running time stays below 3 ms.}
 \end{figure}
-
-Experiment~B (Appendix~\ref{app:expB}) grows the schema from 8 to 32 columns at
-$|\Sig|=200$: random keys over many columns rarely nest, so the cover keeps 12\,\%
-of the input at $n=8$ but 98\,\% at $n=32$, and the running time stays below
-7\,ms.
 
 \subsection{Experiment D: enforcement in a database}
 
@@ -1026,8 +1113,8 @@ To measure what a cover saves at run time, we enforced the input $\Sig$ and its
 cover $\Gamma$ with the index scheme of Section~\ref{sec:indexing} and ran
 identical workloads against both.
 
-\paragraph{Enforcement.} The scheme is implemented exactly as described in
-Section~\ref{sec:indexing}. A possible key is a \sql{UNIQUE} index (nulls
+\paragraph{Enforcement.} The scheme is implemented as described in
+Section~\ref{sec:indexing}, with the \sql{NOT NULL} columns first in every index. A possible key is a \sql{UNIQUE} index (nulls
 distinct). A domain key is a unique index with nulls not distinct. A partial or
 certain key on $K$ with nullable part $N_K$ gets one filtered unique index per
 null pattern $P\subseteq N_K$,
@@ -1043,11 +1130,11 @@ every pattern $P'$ (certain keys). The experiment generates this schema in two
 dialects. The PostgreSQL version uses \sql{UNIQUE NULLS NOT DISTINCT} for domain
 keys, partial indexes, and one PL/pgSQL trigger function per key with the
 pattern branches as \sql{IF} statements; the scripts for every configuration are
-in \texttt{experiments/pg/}. The SQLite version (SQLite~3.45 in memory) realises the same scheme with
+in \texttt{results/D\_enforcement/pg/}. The SQLite version (SQLite~3.54 in memory) realises the same scheme with
 expression indexes on $\sql{coalesce}(A,-1)$ for domain keys, partial indexes,
 and one trigger per null pattern whose \sql{WHEN} clause contains the probes.
 We ran the experiment on both systems: the SQLite run is reported first, and the
-PostgreSQL run (PostgreSQL~16.15, the generated scripts executed through
+PostgreSQL run (PostgreSQL~18.6, the generated scripts executed through
 \texttt{psycopg2}) at the end of this section. Before the experiment the scheme was validated
 against a brute-force implementation of Definition~\ref{def:keys} on random
 instances for inserts and updates: both accepted exactly the same statements.
@@ -1057,7 +1144,8 @@ $|\Sig|\in\{10,20,40,80,120\}$ we draw $\Sig$ as in Experiment~A with keys of
 at most five columns, compute $\Gamma$, and run 1500 inserts of random rows
 (values uniform in $[0,200)$; with probability $0.3$ a row has a null in one
 random nullable column) followed by 600 random single-column updates, accepting
-or rejecting each statement by the constraints. We then run an integrity check:
+or rejecting each statement by the constraints (5--47\,\% of the inserts and 2--16\,\%
+of the updates are rejected, growing with $|\Sig|$). We then run an integrity check:
 for every key of the constraint set a self-join query that searches for a
 violating pair (the pair conditions of Lemma~\ref{lem:typing} in SQL). In every
 one of the 75 runs, on SQLite as well as on PostgreSQL, the two databases
@@ -1074,15 +1162,15 @@ pattern-dispatched triggers agrees with the native PostgreSQL implementation.
 \includegraphics[width=0.9\textwidth]{figs/expD_both.pdf}
 \caption{Experiment D on SQLite (top) and PostgreSQL (bottom): seconds for 1500
 inserts, 600 updates and the integrity check, enforcing the input (dashed) and its
-cover (solid); means of 5 runs.}
+cover (solid); means over 5 key sets.}
 \label{fig:expDboth}
-\Description{}
+\Description{Six line charts of seconds against the number of keys for inserts, updates and integrity checks on SQLite and PostgreSQL; input times grow steeply, cover times stay flat.}
 \end{figure*}
 
 \begin{table}[t]
 \centering
 \caption{Experiment D: cover size, indexes of input and cover, and speed-up
-(input time / cover time) on SQLite and PostgreSQL, means of 5 runs. Absolute
+(input time / cover time) on SQLite and PostgreSQL, means over 5 key sets. Absolute
 times are in Tables~\ref{tab:expD} and~\ref{tab:expDpg} (Appendix~\ref{app:expB}).}
 \label{tab:expDratio}
 \small
@@ -1092,15 +1180,15 @@ times are in Tables~\ref{tab:expD} and~\ref{tab:expDpg} (Appendix~\ref{app:expB}
 \cmidrule(lr){4-5}\cmidrule(lr){6-8}\cmidrule(lr){9-11}
  & $|\Sig|$ & $|\Gamma|$ & $\Sig$ & $\Gamma$ & ins & upd & chk & ins & upd & chk \\
 \midrule
-$\mathcal F_1$ & 10 & 7.4 & 38 & 31 & 1.4 & 1.3 & 1.0 & 1.1 & 1.1 & 3 \\
- & 40 & 16.8 & 154 & 63 & 3.7 & 4.3 & 1.2 & 4.1 & 2.9 & 4 \\
- & 120 & 27.0 & 392 & 84 & 14.5 & 13.1 & 1.4 & 13.3 & 7.0 & 84 \\
-$\mathcal F_2$ & 10 & 8.0 & 27 & 25 & 1.1 & 1.0 & 1.2 & 1.1 & 1.2 & 1 \\
- & 40 & 18.4 & 128 & 54 & 4.0 & 5.4 & 1.9 & 4.7 & 3.2 & 3 \\
- & 120 & 19.8 & 421 & 55 & 35.0 & 47.4 & 3.6 & 31.7 & 9.9 & 160 \\
-combined & 10 & 7.2 & 42 & 34 & 1.6 & 1.2 & 0.9 & 1.0 & 1.1 & 1 \\
- & 40 & 17.4 & 219 & 83 & 5.1 & 4.9 & 1.4 & 4.2 & 3.3 & 4 \\
- & 120 & 26.6 & 565 & 92 & 35.8 & 36.0 & 2.6 & 22.2 & 10.6 & 141 \\
+$\mathcal F_1$ & 10 & 7.4 & 38 & 31 & 1.3 & 1.6 & 1.0 & 1.2 & 1.1 & 1.0 \\
+ & 40 & 16.8 & 154 & 63 & 3.0 & 5.0 & 1.1 & 3.5 & 2.5 & 2.0 \\
+ & 120 & 27.0 & 392 & 84 & 11.1 & 19.4 & 1.2 & 10.7 & 6.1 & 3.8 \\
+$\mathcal F_2$ & 10 & 8.0 & 27 & 25 & 1.1 & 1.0 & 1.1 & 1.0 & 1.0 & 1.2 \\
+ & 40 & 18.4 & 128 & 54 & 3.4 & 5.9 & 1.5 & 4.0 & 2.8 & 2.1 \\
+ & 120 & 19.8 & 421 & 55 & 27.9 & 79.2 & 2.8 & 25.9 & 9.5 & 5.1 \\
+combined & 10 & 7.2 & 42 & 34 & 1.3 & 1.2 & 0.9 & 1.1 & 1.1 & 1.2 \\
+ & 40 & 17.4 & 219 & 83 & 4.3 & 5.1 & 1.4 & 4.1 & 3.3 & 2.0 \\
+ & 120 & 26.6 & 565 & 92 & 34.7 & 41.9 & 2.1 & 19.8 & 10.4 & 4.5 \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -1109,49 +1197,189 @@ combined & 10 & 7.2 & 42 & 34 & 1.6 & 1.2 & 0.9 & 1.0 & 1.1 & 1 \\
 Table~\ref{tab:expDratio} summarise both engines. The number of indexes is the dominant quantity: every partial or certain
 key costs $2^{|N_K|}$ filtered indexes and as many trigger probes, so the input
 at $|\Sig|=120$ creates 390--570 indexes and 600--1000 trigger probes, the cover
-55--90 indexes and 95--165 probes. Accordingly the cost of enforcing the input
+55--92 indexes and 95--165 probes. Accordingly the cost of enforcing the input
 grows superlinearly with $|\Sig|$, while the cost of the cover stays flat once
-$|\Gamma|$ saturates at 20--27 keys. At $|\Sig|=120$ the cover makes inserts
-15 times faster in $\mathcal F_1$, 35 times in $\mathcal F_2$ and 36 times in the
-combined class, updates 13, 47 and 36 times faster, and the integrity check 1.4,
-3.6 and 2.6 times faster; at $|\Sig|=10$ the difference is within noise, as
-about 75\,\% of the keys are then non-redundant. The integrity check gains less
+$|\Gamma|$ saturates at 20--27 keys. Rerunning every run five times changes no ratio
+of Table~\ref{tab:expDratio} by more than 5\,\%, and repetitions differ by under
+1\,\% at the median: the spread is between key sets, whose insert gains at
+$|\Sig|=120$ range over 6--19, 15--48 and 20--58 on SQLite and 7--21, 17--46 and
+12--32 on PostgreSQL. Table~\ref{tab:expDreps} gives the ranges and the rejection rates, which are the
+same on both systems.
+
+\begin{table}[t]
+\centering
+\caption{Experiment D, rerun five times per key set: range of the speed-up over the 5 key sets (each the
+median of its 5 repetitions), and the share of inserts / updates rejected (\%).}
+\label{tab:expDreps}
+\small
+\adjustbox{max width=\columnwidth}{\begin{tabular}{l r r r r r r}
+\toprule
+ & & \multicolumn{2}{c}{SQLite} & \multicolumn{2}{c}{PostgreSQL} & \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+ & $|\Sig|$ & ins & upd & ins & upd & rejected \\
+\midrule
+$\mathcal F_1$ & 10 & 1.0--2.0 & 1.0--7.3 & 1.0--1.8 & 1.0--1.4 & 5 / 2 \\
+ & 40 & 1.8--5.1 & 1.8--12.1 & 1.7--6.8 & 1.5--3.9 & 20 / 7 \\
+ & 120 & 6.2--18.6 & 7.8--34.6 & 7.0--20.5 & 4.8--9.2 & 37 / 12 \\
+$\mathcal F_2$ & 10 & 1.0--1.3 & 1.0--1.2 & 1.0--1.2 & 1.0--1.1 & 7 / 2 \\
+ & 40 & 2.6--4.4 & 3.8--8.6 & 2.3--5.9 & 2.1--4.2 & 20 / 6 \\
+ & 120 & 14.6--47.6 & 26.7--212.8 & 16.5--45.9 & 7.7--13.3 & 45 / 12 \\
+combined & 10 & 1.1--2.0 & 1.1--3.9 & 1.0--1.3 & 1.0--1.2 & 11 / 4 \\
+ & 40 & 2.2--9.5 & 2.6--18.1 & 2.4--9.4 & 2.1--5.6 & 22 / 6 \\
+ & 120 & 19.5--58.3 & 15.3--71.5 & 12.3--31.5 & 6.9--12.7 & 47 / 16 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+ At $|\Sig|=120$ the cover makes inserts
+11 times faster in $\mathcal F_1$, 28 times in $\mathcal F_2$ and 35 times in the
+combined class, updates 19, 79 and 42 times faster (79 times is 3.8 against
+0.05\,s), and the integrity check 1.2, 2.8 and 2.1 times faster; at $|\Sig|=10$, where about 75\,\% of the keys are
+non-redundant, the gains are at most 1.6. The integrity check gains less
 because the self-join per key is cheap compared to the per-statement probes and
 because the check for a certain key, which dominates in $\mathcal F_2$, cannot use
-an equality index on the null-bearing columns in either case. \paragraph{Results on PostgreSQL.} The second row of Figure~\ref{fig:expDboth}
+an equality index on the null-bearing columns in either case.
+
+\paragraph{Results on PostgreSQL\@.} The second row of Figure~\ref{fig:expDboth}
 and the right half of Table~\ref{tab:expDratio} report the same workload on
-PostgreSQL~16 with native \sql{NULLS NOT DISTINCT} indexes, partial unique indexes
+PostgreSQL~18.6 with native \sql{NULLS NOT DISTINCT} indexes, partial unique indexes
 and one PL/pgSQL trigger per partial or certain key, each run one transaction with
 a savepoint per statement. Times are larger than in-process SQLite, but the picture
-is the same: at $|\Sig|=120$ the cover makes inserts 13, 32 and 22 times faster and
-updates 7, 10 and 11 times faster, and at $|\Sig|=10$ the difference is within
-noise. The integrity check gains 84--160 times, for a reason that is not execution
-but planning: PostgreSQL considers every index when planning, and the self-join of
-a key check on a table with 400--600 partial indexes takes 2.4\,s to plan and
-0.08\,ms to execute. Every operation that touches the catalogue is thus charged for
-the size of the declared key set (Experiment~F returns to this).
+is the same: at $|\Sig|=120$ the cover makes inserts 11, 26 and 20 times faster,
+updates 6.1, 9.5 and 10.4 times faster and the integrity check 3.8, 5.1 and 4.5
+times faster, and at $|\Sig|=10$ at most 1.2 times. Planning is not the
+bottleneck: with EXPLAIN ANALYZE, the input's 120 check queries take 0.10--0.17\,s
+to plan and 1.8--2.8\,s to execute, the cover's 4--6\,ms and 0.45--0.81\,s. On
+PostgreSQL~16 it was: there each self-join on a table with 400--600 partial indexes
+took 2.4\,s to plan and 0.08\,ms to execute, so the check gained 84--160 times.
 
-\paragraph{Naive enforcement.} The gain does not depend on the index scheme. With
+\paragraph{Naive enforcement.} A cover also gains without this index scheme. With
 no indexes and one trigger per key whose body is a single \sql{EXISTS} with the
 pair condition of Lemma~\ref{lem:typing} (combined class, first key set of each
-size), inserts took 2.0, 18.5 and 66.3\,s for the input against 1.4, 7.9 and
-21.4\,s for the cover at $|\Sig|=10,40,120$, and updates 3.9, 34.9 and 157\,s
-against 2.3, 14.5 and 43.5\,s: gains of 1.4--3.1 and 1.7--3.6 times, smaller than
+size), inserts took 1.4, 8.3 and 17.4\,s for the input against 1.0, 3.5 and
+5.7\,s for the cover at $|\Sig|=10,40,120$, and updates 2.1, 13.4 and 37.3\,s
+against 1.4, 5.9 and 9.8\,s: gains of 1.4--3.1 and 1.4--3.8 times, smaller than
 with filtered indexes because a naive trigger costs the same for every key. On
-1500 rows the naive input even beats the indexed input at $|\Sig|=120$ (66 against
-128\,s), but the naive cover is four times slower than the indexed cover (21
-against 5.7\,s), and naive cost grows linearly with the table.
+1500 rows the naive input even beats the indexed input at $|\Sig|=120$ (17 against
+37\,s), but the naive cover is three times slower than the indexed cover (5.7
+against 1.9\,s), and naive cost grows linearly with the table.
 
-\subsection{Experiment E: keys mined from a real database}\label{sec:expE}
+\paragraph{Native enforcement.} Much of the gain above is the price of the
+emulation, which spends $2^{|N_K|}$ filtered indexes and a trigger on each partial or
+certain key. To separate the two, we built a prototype index access method for
+PostgreSQL~18 that enforces such a key in a single B-tree, wrapping PostgreSQL's
+B-tree implementation. It agrees with a brute-force check on random
+inserts, and it passes tests of waiting between concurrent conflicting inserts and of
+crash recovery. On the PostgreSQL workload at $|\Sig|=120$ it enforces the input
+14--32 times faster than the emulation, and the cover still has 20--27 instead of
+120 indexes and makes inserts 2.5--2.7 and updates 1.5--1.6 times faster, with the
+same statements accepted. Each key now costs one index, and the fixed cost of each
+statement takes a larger share. The index is not a contribution of this paper; its
+design and full evaluation are left to future work, and Appendix~\ref{app:native}
+summarises it and its validation. With 4 or 8 concurrent clients inserting $3\cdot10^4$ rows under
+40 or 50 keys, the emulation stays correct only under a table lock, at 80--1140 rows/s for any number
+of clients, or under \sql{SERIALIZABLE}, with up to 29{,}000 retries and up to 200
+rows still failing after 50; without either it let 7 violating rows in. The native
+index needs neither, reaches 3300--13{,}200 rows/s, and the cover raises its
+throughput 1.4--2.9 times (Table~\ref{tab:native-conc}).
+
+\paragraph{Where the redundancy comes from.} Two simpler reductions bracket the
+cover (Table~\ref{tab:breakdown}). Dropping each key implied by another key on the
+\emph{same} column set---what an index advisor comparing definitions across classes
+could find---removes at most 19\,\% of the keys. Dropping each key implied by a
+\emph{single} other key (R1--R4 with one premise) yields the cover in 14 of the 15
+configurations, as Theorem~\ref{thm:maximal-classes} predicts for $\mathcal F_1$ and
+$\mathcal F_2$; only in the combined class at $|\Sig|=120$ does colouring remove
+more, 0.2 keys and 6 indexes on average. On random keys the savings thus come from
+single-premise reasoning across classes and column sets; colouring is what
+guarantees that nothing more can be removed, not where these savings come from.
+
+\begin{table}[t]
+\centering
+\caption{Experiment D: keys and indexes (means of 5 key sets) after dropping weaker
+keys on the same column set, after dropping keys implied by a single other key,
+and in the cover.}
+\label{tab:breakdown}
+\small
+\adjustbox{max width=\columnwidth}{\begin{tabular}{l r r r r r r r}
+\toprule
+ & & \multicolumn{2}{c}{same set} & \multicolumn{2}{c}{one key} & \multicolumn{2}{c}{cover} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+ & $|\Sig|$ & keys & idx & keys & idx & keys & idx \\
+\midrule
+$\mathcal F_1$ & 10 & 9.6 & 38 & 7.4 & 31 & 7.4 & 31 \\
+ & 20 & 19.6 & 77 & 11.0 & 43 & 11.0 & 43 \\
+ & 40 & 36.6 & 151 & 16.8 & 63 & 16.8 & 63 \\
+ & 80 & 71.8 & 250 & 20.8 & 62 & 20.8 & 62 \\
+ & 120 & 101.0 & 373 & 27.0 & 84 & 27.0 & 84 \\
+$\mathcal F_2$ & 10 & 9.8 & 27 & 8.0 & 25 & 8.0 & 25 \\
+ & 20 & 19.4 & 62 & 12.4 & 39 & 12.4 & 39 \\
+ & 40 & 36.8 & 124 & 18.4 & 54 & 18.4 & 54 \\
+ & 80 & 67.6 & 289 & 20.2 & 69 & 20.2 & 69 \\
+ & 120 & 97.6 & 399 & 19.8 & 55 & 19.8 & 55 \\
+combined & 10 & 9.8 & 41 & 7.2 & 34 & 7.2 & 34 \\
+ & 20 & 19.2 & 107 & 11.8 & 72 & 11.8 & 72 \\
+ & 40 & 37.0 & 212 & 17.4 & 83 & 17.4 & 83 \\
+ & 80 & 68.8 & 354 & 26.0 & 112 & 26.0 & 112 \\
+ & 120 & 98.6 & 519 & 26.8 & 98 & 26.6 & 92 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\paragraph{At scale.} We repeated the combined-class workload with $10^6$ inserts
+and $2\cdot10^5$ updates (values in $[0,32000)$, an index on the row identifier, every
+statement in autocommit with \sql{synchronous\_commit} off) on PostgreSQL~18.6, with three randomly drawn key sets per $|\Sig|\in\{30,40,50\}$,
+seven of the nine run twice (Table~\ref{tab:expDxl}). Input
+and cover accepted the same statements in every run, and both runs of a key set
+accepted the same. The cover makes inserts
+1.2--8.6 and updates 1.2--7.0 times faster; the two runs of a key set differ by at
+most 0.7 in a speed-up. The key sets of one size differ by
+a factor of up to about 4 in their insert gain, so $|\Sig|$ alone does not determine it; the
+gain grows with the share of indexes the cover removes: 1.2--1.3 times at 27\,\%, 2.0--4.0
+for inserts and 2.2--3.6 for updates at 44--71\,\%, and
+4.7--8.6 for inserts and 6.4--7.0 for updates at 78--79\,\%. Within the middle range the
+order is not exact: removing 71\,\% gains 2.2 on inserts, no more than removing 44\,\%,
+and removing 50--53\,\% gains 2.0--2.1. With the native index on the same key sets
+(Table~\ref{tab:native-xl}) the input runs 4.3--13 and the cover 3.7--9.0 times faster
+than under the emulation, all accepted statements agree, and the cover makes inserts
+1.3--4.1 and updates 1.2--3.6 times faster; this gain grows with the share of keys
+it removes, from 1.3 at 37\,\% to 3.3--4.1 at 68\,\%, with no exception in the order.
+
+\begin{table}[t]
+\centering
+\caption{Experiment D at scale on PostgreSQL~18.6: $10^6$ inserts and $2\cdot10^5$
+updates, combined class, sorted by the share of indexes the cover removes;
+speed-up = input time / cover time, first/second run where a key set ran twice.}
+\label{tab:expDxl}
+\small
+\begin{tabular}{r r r r r r}
+\toprule
+ & & \multicolumn{2}{c}{indexes} & \multicolumn{2}{c}{speed-up} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+$|\Sig|$ & $|\Gamma|$ & $\Sig$/$\Gamma$ & removed & ins & upd \\
+\midrule
+30 & 19 & 120/88 & 27\,\% & 1.2/1.3 & 1.2/1.2 \\
+40 & 23 & 178/99 & 44\,\% & 2.2/2.2 & 2.6/2.5 \\
+50 & 25 & 222/110 & 50\,\% & 2.1 & 2.4 \\
+30 & 13 & 87/41 & 53\,\% & 2.0 & 2.2 \\
+50 & 23 & 299/114 & 62\,\% & 3.2/3.9 & 3.5/3.6 \\
+40 & 18 & 249/76 & 69\,\% & 3.4/4.0 & 2.8/3.0 \\
+30 & 12 & 133/39 & 71\,\% & 2.2/2.2 & 3.5/3.6 \\
+50 & 16 & 228/50 & 78\,\% & 8.2/8.6 & 7.0/6.9 \\
+40 & 13 & 210/44 & 79\,\% & 4.8/4.7 & 6.4/6.5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experiment E: keys mined from real data}\label{sec:expE}
 
 The previous experiments use random key sets. To see whether declared keys are
 redundant in practice we take the keys that key mining produces for a real
 database: all minimal keys of every class with up to five columns, mined from the
 21 tables of the Hockey database with the orthogonal key miner
 of~\cite{KoehlerL25} at completeness threshold 0, at two settings of its
-orthogonality filter. Level~1 is the laxest and returns 4349 possible, 118
-domain, 153 partial and 187 certain keys; level~9 is the strictest and returns
-only the keys the miner considers meaningful, 170 possible, 34 domain, 34 partial
+orthogonality filter. Level~1 is the laxest and returns 4350 possible, 119
+domain, 154 partial and 188 certain keys; level~9 is the strictest and returns
+only the keys the miner considers meaningful, 171 possible, 34 domain, 34 partial
 and 34 certain keys. This is the standard setting of key discovery: each class is
 mined on its own and returns its own minimal keys that pass the filter, so the
 stock a data engineer receives is the union of four lists. Keys filtered out
@@ -1166,7 +1394,7 @@ effect of the profiled \sql{NOT NULL} columns is examined below.
 \paragraph{Level 1.} Of the 4811 declared keys, 308 are redundant, all of one
 kind: a column set mined as a minimal key of two or more classes, where only the
 strongest class is needed (R1). Nothing was removed by enlargement alone (R2) or by
-the colouring criterion of Theorem~\ref{thm:certain}(iii). On \textsc{Master}, the table with the most partial keys, all six
+the colouring criterion of Theorem~\ref{thm:certain}(iii). On \textsc{Master}, all six
 mined partial keys contain both nullable identifiers $\mathit{playerID}$ and
 $\mathit{coachID}$; colouring one red and the other blue makes every edge
 bichromatic, so no set of these keys implies any certain key, as an exhaustive
@@ -1180,7 +1408,9 @@ a different story: \textsc{TeamSplits} alone has 3705, almost all on sparse colu
 whose few non-null values happen to be distinct; these are accidental in the sense
 of~\cite{KoehlerL25}, and the cover rightly keeps them, since nothing implies them.
 Excluding \textsc{TeamSplits}, 28\% of the declared keys and 34\% of the
-indexes are redundant.
+indexes are redundant. Unlike in Experiment~D, dropping weaker keys on the same
+column set alone gives every cover of this section: mined redundancy is an artefact
+of mining each class separately, and the theory shows that it is all there is.
 
 \paragraph{Level 9.} The strict filter removes the accidental keys of the three
 record-identifying classes entirely: the domain, partial and certain lists are now
@@ -1202,28 +1432,73 @@ columns, which none implies alone; but a mined certain key on
 $\{\mathit{number},\mathit{yard},\mathit{next\_voyage}\}$ already implies it by R2,
 so the cover removes nothing by colouring.
 
-\paragraph{\sql{NOT NULL}.} With $\NN$ set to the columns the profiles show without
+\paragraph{A third database.} The North Carolina voter file is a common benchmark of
+key discovery. For the 776,613 active voters of Wake County we took 13 columns, six
+total (last and first name, birth year, gender, street address, registration date)
+and seven nullable (middle name, suffix, ZIP code, mailing address, birth state,
+precinct, ward), and mined all minimal keys of up to six columns exhaustively, without
+an orthogonality filter: 70 possible, 7 domain, 4 partial and 3 certain keys. The
+cover keeps 74 of the 84; every removed key is a stronger class on the same column
+set (R1) or a partial key with one nullable column, equivalent to the certain key on
+the same set (R4). The natural identity of a voter misses being a key by six pairs of
+records: three agree on full name, birth year and address, and three agree on them
+except that one record lacks the middle name, the dirty data a partial key forbids.
+
+\paragraph{Colouring on real data.} On none of the five data sets we examined---Hockey,
+VOC, the voter file, and two extracts of the Wikidata query service (144,327 people
+with library authority identifiers, 146,716 chemical compounds with registry
+identifiers)---nor on 173 outer joins of the Hockey and VOC tables (every pair of
+tables sharing a column, and the six-way join of VOC's crew tables; keys of up to
+four columns) does colouring remove a mined key. Joins make matters worse, not
+better: they pad unmatched records with nulls, which subsume and are compatible
+with almost any record, and repeat each entity's values across many records. The Wikidata extracts have no
+domain, partial or certain key at all, because their identifier columns are mostly
+null: a partial key fails as soon as one record is null on all its columns, and a
+certain key as soon as two records share no non-null column. Colouring needs
+records that miss few of several alternative identifiers, as in \textsc{Contact} or
+among the voyages of one number in VOC. It pays off for declared requirements,
+which state such properties whether or not the current data witness them, and for
+data that grow towards them. Requirements of an ``any two of'' form are common
+in practice: Canadian anti-money-laundering guidance, for instance, accepts any two
+of three identity checks from different sources~\cite{FINTRAC}, although these
+combine attributes rather than unique identifiers and so are not themselves partial
+keys. Consider a bank's customer table with nullable
+\emph{Passport}, \emph{Licence} and \emph{TaxNo}. Compliance requires any two
+customers to differ on an identifier both have,
+$\ck{\mathit{Passport},\mathit{Licence},\mathit{TaxNo}}$; deduplication forbids a
+customer stored once with two of these identifiers and once with one, the partial
+keys on the three pairs. Declared by different teams, the four keys look
+independent: no single partial key implies the certain key, and a designer who
+compares keys pairwise keeps all four. Their hypergraph is a triangle, so the
+cover drops the certain key and the 8 filtered indexes and trigger that enforce it
+(Theorem~\ref{thm:certain}).
+
+\paragraph{\sql{NOT NULL}\@.} With $\NN$ set to the columns the profiles show without
 nulls, the covers do not change---R1 already determines them---but their cost
 does: each of the 34 meaningful certain keys of level~9 lies on \sql{NOT NULL}
 columns, is a candidate key (R3), and costs one \sql{UNIQUE} index, so input and
 cover cost 273 and 171 indexes. At level~1 the indexes fall from 10625 to 5277 for
-the input and from 8247 to 4848 for the cover. All covers take 1.5\,s to compute
+the input and from 8247 to 4848 for the cover. All covers take 0.8\,s to compute
 at level~1 and 1\,ms at level~9.
 
 \paragraph{Enforcing the mined keys on the real tables.} We loaded the 20 fully
-exported tables (24{,}492 rows, values pseudonymised by hashing, which preserves
+exported tables, one index fewer than Table~\ref{tab:expE} counts (24{,}492 rows, values pseudonymised by hashing, which preserves
 equality and nulls) into PostgreSQL with their profiled \sql{NOT NULL} columns,
 enforced the mined keys or their cover with the scheme of
 Section~\ref{sec:indexing}, and inserted each table's own rows. Both sets accept
 every row. At level~1 the cover needs 4847 instead of 5276 indexes and 125 instead
-of 188 triggers, and the inserts take 178 instead of 246\,s; without
+of 188 triggers, and the inserts take 60 instead of 84\,s; without
 \textsc{TeamSplits}, whose 3705 accidental possible keys are all kept, the cover
 removes 27\,\% of the indexes and 38\,\% of the insert time. On \textsc{Teams}, 61
 partial keys on the column sets of certain keys each carried a trigger and an
-index family; removing them halves the insert time (132 against 67\,s). At level~9
+index family; removing them halves the insert time (48 against 24\,s). At level~9
 the cover cuts 273 \sql{UNIQUE} indexes to 171 and their storage from 11.6 to
-8.3\,MiB. On VOC the cover saves 28\,\% of the indexes and 39\,\% of the insert time
-(13.0 against 21.2\,s).
+8.3\,MiB. On VOC the cover saves 28\,\% of the indexes and 40\,\% of the insert time
+(3.9 against 6.4\,s). With the native index (Table~\ref{tab:native-e}, measured
+again with the four runs of each table interleaved) these inserts are 9.9 times faster
+without \textsc{TeamSplits} and 3.0 times on VOC; the cover still removes 28 and
+27\,\% of the indexes but only 9 and 22\,\% of the insert time, as the fixed cost
+of each row now dominates.
 
 \paragraph{What the saving is, physically.} A possible key on $K$ is a plain
 \sql{UNIQUE}$(K)$, a domain key \sql{UNIQUE}$(K)$ \sql{NULLS NOT DISTINCT}, a
@@ -1261,9 +1536,9 @@ SeriesPost & 24 & 7/5/5/7 & 9 & 156 & 106 & 11 \\
 Coaches & 22 & 17/3/1/1 & 17 & 36 & 24 & 17 \\
 11 smaller tables & 59 & 18/13/14/14 & 19 & 179 & 79 & 20 \\
 \midrule
-level 1, all tables & 4811 & 4349/118/153/187 & 4503 & 10625 & 8247 & 4848 \\
-\quad domain/partial/certain & 461 & 0/118/153/187 & 237 & 6275 & 3981 & \\
-level 9, all tables & 273 & 170/34/34/34 & 171 & 513 & 291 & 171 \\
+level 1, all tables & 4811 & 4350/119/154/188 & 4503 & 10625 & 8247 & 4848 \\
+\quad domain/partial/certain & 461 & 0/119/154/188 & 237 & 6275 & 3981 & \\
+level 9, all tables & 273 & 171/34/34/34 & 171 & 513 & 291 & 171 \\
 \quad domain/partial/certain & 102 & 0/34/34/34 & 34 & 342 & 154 & 34 \\
 \bottomrule
 \end{tabular}}
@@ -1277,7 +1552,9 @@ Experiment~E in PostgreSQL, each with its \sql{NOT NULL} columns and the unique
 indexes of its cover. Each query is compared with the form an optimiser reasoning
 from the cover could produce, or with the same query without the key; results are
 identical, the rewrites were applied by hand, and times are medians of nine runs
-(Table~\ref{tab:expF}).
+(Table~\ref{tab:expF}). To test larger data we also replicated every table 100 times,
+XOR-ing each non-null value of copy $i$ with a salt that preserves equality, nulls
+and keys (0.18--0.81 million rows per table).
 
 \paragraph{Correctness.} {\sloppy An idempotent reload of the VOC invoices with
 \sql{INSERT} \dots\ \sql{ON CONFLICT (number, chamber)} \sql{DO NOTHING} inserts a
@@ -1290,70 +1567,90 @@ index: here \sql{UNIQUE} is wrong, not merely slow.\par}
 \sql{DISTINCT} licensed by a domain key---for the \sql{DISTINCT} on \textsc{Master}
 the key is not even in the cover but implied by its partial key (R1)---nor an
 anti-join that removes subsumed records under a partial key; these rewrites make
-execution 3.3 to 8.5 times faster. The certain key buys no speed for record
-linkage, as the hash join is already cheap; its value is the cardinality estimate,
-6136 rows instead of 367.
+execution 3.3 to 6.4 times faster, and 3.6 to 6.9 times on the replicated tables, where
+the lookup that a partial key's filtered index answers gains four orders of magnitude. The certain key buys no speed for record
+linkage, as the hash join is already cheap; its value is a cardinality bound: at
+most one match per record, 6136 rows, where PostgreSQL estimates 367.
 
 \begin{table}[t]
 \centering
-\caption{Experiment F: execution time (ms) without the key or rewrite, and with it}
+\caption{Experiment F: execution time (ms) without the key or rewrite, and with it
+on PostgreSQL~18.6, and the gain on tables replicated 100 times}
 \label{tab:expF}
 \small
-\adjustbox{max width=\columnwidth}{\begin{tabular}{l l r r r}
+\adjustbox{max width=\columnwidth}{\begin{tabular}{l l r r r r}
 \toprule
-Query & key & without & with & gain \\
+Query & key & without & with & gain & $\times100$ \\
 \midrule
-join removal (\textsc{Coaches}) & possible & 1.46 & 0.16 & 9.1 \\
-\sql{GROUP BY} removal (invoices) & domain & 2.06 & 0.43 & 4.8 \\
-\sql{DISTINCT} removal (\textsc{Master}) & domain, implied & 3.67 & 1.11 & 3.3 \\
-subsumption anti-join (voyages) & partial & 6.09 & 0.72 & 8.5 \\
-lookup: ship never arrived & partial & 0.95 & 0.011 & 86 \\
-record linkage, one match & certain & 5.06 & 13.8 & 0.4 \\
+join removal (\textsc{Coaches}) & possible & 0.55 & 0.07 & 7.9 & 16.5 \\
+\sql{GROUP BY} removal (invoices) & domain & 0.70 & 0.17 & 4.1 & 6.9 \\
+\sql{DISTINCT} removal (\textsc{Master}) & domain, implied & 1.11 & 0.34 & 3.3 & 3.6 \\
+subsumption anti-join (voyages) & partial & 1.98 & 0.31 & 6.4 & 3.7 \\
+lookup by null pattern (voyages) & partial & 0.32 & 0.002 & ${>}100$ & 16000 \\
+record linkage, one match & certain & 1.59 & 3.74 & 0.4 & 0.3 \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-\paragraph{Planning cost.} For the two self-joins over \textsc{voyages}, PostgreSQL
-explores combinations of partial indexes: planning takes 0.16\,ms without indexes,
-231\,ms with the cover's 157 indexes and 389\,ms with the 202 of all mined keys, for
-5\,ms of execution. The cover halves the planning cost, as it did for the integrity
-check of Experiment~D.
+\paragraph{Lookups by null pattern.} A partial key also licenses point lookups by
+null pattern: the voyage of a given number and yard that never arrived (null arrival
+date) is found in the filtered index of that pattern of
+$\pk{\mathit{number},\mathit{yard},\mathit{arrival\_date}}$ in 0.002\,ms, against a
+0.32\,ms scan without the key.
+
+\paragraph{Planning cost.} PostgreSQL considers every index when planning. On
+\textsc{Master}, whose cover needs 403 filtered indexes, each query touching it takes
+0.24--0.33\,ms to plan against at most 0.04\,ms without them, for at most 1.1\,ms of execution.
+On \textsc{voyages} the two self-joins take 0.27--0.34\,ms to plan with the cover's
+157 indexes and 0.35--0.44\,ms with the 202 of all mined keys.
 
 \paragraph{Hidden uniqueness.} PostgreSQL proves uniqueness only from unconditional
 unique indexes. On \textsc{voyages} the cover drops
 $\pos{\mathit{number},\mathit{boatname}}$, implied by
 $\ck{\mathit{number},\mathit{boatname}}$, whose indexes are filtered, and the join
 of a voyage with its ship's next voyage loses join removal, which a plain
-\sql{UNIQUE} index restores (1.0 against 4.3\,ms). The certain key's
+\sql{UNIQUE} index restores (0.30 against 1.7\,ms). The certain key's
 all-non-null index would suffice, since \sql{=} never matches null; a planner need
 only accept it as a uniqueness proof. The cover is the smallest set of constraints
 to enforce, not a physical design, and a designer may still add indexes for queries.
-Native support for partial and certain keys would remove both this effect and the
-planning overhead.
+A native index that also served queries and uniqueness proofs would remove both
+this effect and the planning overhead.
 
-\paragraph{Summary.} Covers of thousands of keys take milliseconds, and the
-colouring test removes certain keys wholesale once binary partial keys accumulate.
-Enforcing the cover makes inserts, updates and integrity checks one to two orders
-of magnitude faster at 120 declared keys on two systems. On keys mined from two real
-databases a third to a half of the record-identifying keys are redundant, and
-enforcing the cover on the real tables saves 27--28\,\% of the indexes and
-38--39\,\% of the insert time; its keys also license query rewrites that SQL's
-\sql{UNIQUE} does not.
+\paragraph{Summary.} Covers take 0.1\,s for 3200 random keys and 0.8\,s for the
+4811 mined Hockey keys. Their savings come from single-premise reasoning across
+classes: on random keys it yields the cover in 14 of 15 configurations, and on mined
+keys every removal is a weaker key on a column set mined in several classes;
+colouring removes certain keys wholesale only once binary partial keys accumulate
+(Experiment~C). Of the record-identifying Hockey keys, half to two-thirds are
+redundant, and enforcing the cover on the real tables saves 8--28\,\% of the
+indexes and 29--40\,\% of the insert time (27\,\% and 38\,\% on Hockey without
+one table of accidental keys). With a million inserts on PostgreSQL the cover of 30--50 random
+keys makes inserts and updates 1.2 to 9 times faster, depending on the share of
+indexes removed, and at 120 keys makes inserts 11 to 35 times faster, and 2.5 times
+under native enforcement, with integrity checks up to 5 times faster; its keys also license
+query rewrites that SQL's \sql{UNIQUE} does not.
 
 %=====================================================================
 
 \section{Related Work}\label{sec:related}
 %=====================================================================
 
-\paragraph{Keys over incomplete relations.} Keys with nulls go back to Thalheim's
-key sets~\cite{Thalheim89} and the Codd families of~\cite{HLL11}; key sets were
+\paragraph{Keys over incomplete relations.} Functional dependencies and keys with
+nulls were studied early under the no-information and unknown interpretations of
+nulls~\cite{Lien82,AM86}; Levene and Loizou's strong and weak keys and dependencies
+\cite{LL99} hold in all, respectively some, completions, the possible-world
+reading of our certain and possible keys, and Hartmann and Link axiomatise
+dependencies over SQL table definitions with \sql{NOT NULL}~\cite{HL12}. Keys with
+nulls also go back to Thalheim's key sets~\cite{Thalheim89} and the Codd families
+of~\cite{HLL11}; key sets were
 axiomatised and their implication problem settled in~\cite{HLL23}. Possible and
 certain keys, their axiomatisation and their enforcement by indexes were studied
 in~\cite{KLZ15,KLLZ16}; our R1--R3 specialise to their system. Partial keys, the
 ordering of the four null semantics that this paper axiomatises, and the use of
 domain semantics as the default of key discovery are from~\cite{KoehlerL25}, whose
 concern is the discovery of meaningful keys from inconsistent and incomplete
-relations. Embedded uniqueness constraints~\cite{WLL19} add a completeness requirement to a
+relations. Partial keys forbid subsumed records, the redundancy that full disjunctions
+remove~\cite{RU96,CS07}. Embedded uniqueness constraints~\cite{WLL19} add a completeness requirement to a
 possible key; probabilistic and possibilistic keys~\cite{BL17,BJKLLP19} add degrees
 of certainty.
 
@@ -1384,8 +1681,8 @@ which removes only keys the others already enforce.
 
 \paragraph{Axiomatisability.} Two-tuple witnesses and column typings are in the
 spirit of Armstrong-relation constructions. Classical non-finite axiomatisability
-results, for embedded multivalued dependencies or for functional with inclusion
-dependencies, rest on unbounded chains; ours rests on a colouring property (see
+results, for embedded multivalued dependencies~\cite{SW82} or for functional with
+inclusion dependencies~\cite{CFP84}, rest on unbounded chains; ours rests on a colouring property (see
 after Theorem~\ref{thm:nonfinite}). The hardness of hypergraph 2-colourability is
 due to Lov\'asz~\cite{Lovasz73}.
 
@@ -1402,8 +1699,9 @@ between a schema and the smallest set of indexes that enforces it.
 
 Open questions include implication for key sets~\cite{Thalheim89,HLL23}
 and under completeness thresholds, and an optimiser that reasons from the cover;
-native support for partial and certain keys would remove the planning overhead of
-filtered indexes and the uniqueness they hide (Section~\ref{sec:expF}).
+a native index that also served queries and uniqueness proofs, unlike our prototype
+(Appendix~\ref{app:native}), would remove the planning overhead of filtered indexes
+and the uniqueness they hide (Section~\ref{sec:expF}).
 
 Diverse ways to identify objects uniquely, but a unique way to enforce them all.
 
@@ -1422,10 +1720,31 @@ Diverse ways to identify objects uniquely, but a unique way to enforce them all.
   incomplete relations. \emph{Comput. J.} 54(7):1166--1180, 2011.
 \bibitem{HLL23} M. Hannula, X. Li, S. Link. Controlling entity integrity with key
   sets. \emph{J. Comput. Syst. Sci.} 136:195--219, 2023.
+\bibitem{Lien82} Y.~E. Lien. On the equivalence of database models.
+  \emph{J. ACM} 29(2):333--362, 1982.
+\bibitem{AM86} P. Atzeni, N.~M. Morfuni. Functional dependencies and constraints on
+  null values in database relations. \emph{Inf. Control} 70(1):1--31, 1986.
+\bibitem{LL99} M. Levene, G. Loizou. Database design for incomplete relations.
+  \emph{ACM Trans. Database Syst.} 24(1):80--126, 1999.
+\bibitem{HL12} S. Hartmann, S. Link. The implication problem of data dependencies
+  over SQL table definitions: axiomatic, algorithmic and logical characterizations.
+  \emph{ACM Trans. Database Syst.} 37(2):13, 2012.
+\bibitem{RU96} A. Rajaraman, J.~D. Ullman. Integrating information by outerjoins and
+  full disjunctions. In \emph{PODS}, 238--248, 1996.
+\bibitem{CS07} S. Cohen, Y. Sagiv. An incremental algorithm for computing ranked full
+  disjunctions. \emph{J. Comput. Syst. Sci.} 73(4):648--668, 2007.
 \bibitem{KLZ15} H. K\"ohler, S. Link, X. Zhou. Possible and certain SQL keys.
   \emph{Proc. VLDB Endow.} 8(11):1118--1129, 2015.
 \bibitem{KLLZ16} H. K\"ohler, U. Leck, S. Link, X. Zhou. Possible and certain keys
   for SQL. \emph{VLDB J.} 25(4):571--596, 2016.
+\bibitem{SW82} Y. Sagiv, S.~F. Walecka. Subset dependencies and a completeness
+result for a subclass of embedded multivalued dependencies. \emph{J. ACM}
+29(1):103--117, 1982.
+
+\bibitem{CFP84} M.~A. Casanova, R. Fagin, C.~H. Papadimitriou. Inclusion
+dependencies and their interaction with functional dependencies. \emph{J. Comput.
+Syst. Sci.} 28(1):29--59, 1984.
+
 \bibitem{Lovasz73} L. Lov\'asz. Coverings and colorings of hypergraphs. In
   \emph{Proc. 4th Southeastern Conf. on Combinatorics, Graph Theory and Computing},
   pp.~3--12, 1973.
@@ -1482,6 +1801,10 @@ Diverse ways to identify objects uniquely, but a unique way to enforce them all.
   \url{https://www.postgresql.org/docs/15/}, accessed 2026.
 \bibitem{Db2Doc} IBM. \emph{Db2 documentation}: CREATE INDEX statement.
   \url{https://www.ibm.com/docs/en/db2}, accessed 2026.
+\bibitem{FINTRAC} FINTRAC. \emph{Methods to verify the identity of persons and
+  entities}, Section~2.3, Dual-process method.
+  \url{https://fintrac-canafe.canada.ca/guidance-directives/client-clientele/Guide11/11-eng},
+  accessed 2026.
 \bibitem{CGM90} U. S. Chakravarthy, J. Grant, J. Minker. Logic-based approach to
   semantic query optimization. \emph{ACM Trans. Database Syst.} 15(2):162--207, 1990.
 \bibitem{PL94} G. N. Paulley, P.-{\AA}. Larson. Exploiting uniqueness in query
@@ -1563,7 +1886,7 @@ possible; this is the hierarchy~\eqref{eq:hierarchy} at the level of pairs, and 
 types \dd, \vn, \nv, \bn\ witness its strictness in turn.
 
 \begin{remark}\label{rem:noaxiom}
-No key is valid: the two-tuple instance with every column of type \eq\ violates
+No key holds in every instance: the two-tuple instance with every column of type \eq\ violates
 $\pos{K}$ for every $K$, including $K=\emptyset$. A sound inference system therefore
 has no axioms, only rules with at least one premise.
 \end{remark}
@@ -1639,14 +1962,16 @@ premise contained in $K\cap\NN$, both derivable by R1--R3. \qed
 By Lemma~\ref{lem:pair} it suffices to consider a two-tuple instance with type
 assignment $\tau$; by Lemma~\ref{lem:typing} satisfaction is read off $\tau$.
 
-\emph{R1.} The four conditions of Lemma~\ref{lem:typing} are nested as stated; for
-candidate keys use Lemma~\ref{lem:cand}.
+\emph{R1.} The four conditions of Lemma~\ref{lem:typing} are nested in the order
+of~\eqref{eq:hierarchy}; for candidate premises use Lemma~\ref{lem:cand}.
 
 \emph{R2.} Each condition asks for a column of some type inside the key, and is
-preserved when the key grows.
+preserved when the key grows. (Candidate keys are excluded, as a larger key may
+contain nullable columns.)
 
 \emph{R3.} If $K\subseteq\NN$ every column of $K$ has type \eq\ or \dd. $\pos{K}$
-supplies a column of type other than \eq, hence \dd, hence $\ck{K}$.
+supplies a column of type other than \eq, hence \dd, which satisfies the key on $K$
+in every class; for $\cand{K}$ use Lemma~\ref{lem:cand}.
 
 \emph{R4.} $\pk{XA}$ supplies $C_1$ with $\tau(C_1)\in\{\vn,\dd\}$ and $C_2$ with
 $\tau(C_2)\in\{\nv,\dd\}$. If either is \dd\ then $\ck{XA}$ holds. Otherwise
@@ -1669,19 +1994,18 @@ columns. Only premises $\mathcal C(L)\in\Sig$ with $L\subseteq K$ need checking.
 
 \emph{Case $\varphi=\pos{K}$.} Set $\tau(C)=\eq$ for all $C\in K$; this violates
 $\pos{K}$. If $\mathcal C(L)\in\Sig$ with $L\subseteq K$ then $\mathcal C(L)\vdash
-\pos{L}$ by R1 (via Lemma~\ref{lem:cand} if $\mathcal C$ is candidate) and $\pos{L}
-\vdash\pos{K}$ by R2, contradicting $\pos{K}\notin\Sig^+$. So no such premise
+\pos{L}$ by R1 and $\pos{L}\vdash\pos{K}$ by R2, contradicting $\pos{K}\notin\Sig^+$. So no such premise
 exists.
 
 \emph{Case $\varphi=\dom{K}$.} If $K\subseteq\NN$ then $\pos{K}\notin\Sig^+$, for
-otherwise R3 and R1 give $\dom{K}\in\Sig^+$; the instance of the previous case
+otherwise R3 gives $\dom{K}\in\Sig^+$; the instance of the previous case
 violates $\pos{K}$ and hence $\dom{K}$. If $K\not\subseteq\NN$ set $\tau(A)=\bn$ for
 $A\in K\cap N$. No column of $K$ has type \nv, \vn\ or \dd, so $\dom{K}$ fails. Let
 $\mathcal C(L)\in\Sig$ with $L\subseteq K$. If $\mathcal C$ is domain, partial,
 certain or candidate then R1 and R2 put $\dom{K}$ into $\Sig^+$. If $\mathcal C$ is
 possible then $\pos{L}$ holds iff $L$ has a non-\eq\ column iff $L\cap N\neq
-\emptyset$; if instead $L\subseteq K\cap\NN$ then $\pos{L}\vdash\ck{L}\vdash\dom{L}
-\vdash\dom{K}$ by R3, R1, R2, a contradiction.
+\emptyset$; if instead $L\subseteq K\cap\NN$ then $\pos{L}\vdash\dom{L}\vdash\dom{K}$ by R3
+and R2, a contradiction.
 
 \emph{Case $\varphi=\pk{K}$.} If $K\subseteq\NN$ argue as before with the
 \eq-instance. If $K\not\subseteq\NN$ set $\tau(A)=\nv$ for $A\in K\cap N$. No column
@@ -1689,13 +2013,12 @@ of $K$ has type \vn\ or \dd, so $\pk{K}$ fails. Let $\mathcal C(L)\in\Sig$ with
 $L\subseteq K$. If $\mathcal C$ is partial, certain or candidate then $\pk{K}\in
 \Sig^+$ by R1, R2. If $\mathcal C$ is domain or possible then $\mathcal C(L)$ holds
 iff $L\cap N\neq\emptyset$, since an \nv\ column satisfies both; if $L\subseteq K\cap
-\NN$ then R3, R1, R2 derive $\pk{K}$, a contradiction.
+\NN$ then R3 and R2 derive $\pk{K}$, a contradiction.
 
 \emph{Case $\varphi=\cand{K}$.} By Lemma~\ref{lem:cand}, $\Sig\models\cand{K}$ iff
 $K\subseteq\NN$ and $\Sig\models\ck{K}$. If $K\not\subseteq\NN$, the one-tuple
 instance with a null in $K\setminus\NN$ satisfies $\Sig$ and violates $\cand{K}$. If
-$K\subseteq\NN$ then $\ck{K}\in\Sig^+$ iff $\pos{K}\in\Sig^+$ by R1 and R3, so
-$\cand{K}\notin\Sig^+$ gives $\pos{K}\notin\Sig^+$ and the \eq-instance violates
+$K\subseteq\NN$ then $\cand{K}\notin\Sig^+$ gives $\pos{K}\notin\Sig^+$ by R3, and the \eq-instance violates
 $\ck{K}$, hence $\cand{K}$. \qed
 
 \noindent\textbf{Proof of Theorem~\ref{thm:certain}.}
@@ -1750,14 +2073,15 @@ Section~\ref{sec:prelim} a candidate premise is a certain key on \sql{NOT NULL}
 columns and contributes only to condition (i) of Theorem~\ref{thm:certain}, and a
 candidate target has $N_K=\emptyset$ by Lemma~\ref{lem:cand}, so condition (iii)
 can hold only through the empty edge, i.e.\ through a premise contained in
-$K\subseteq\NN$, which R3 and R1 derive.
+$K\subseteq\NN$, which R1--R3 derive.
 
 For $\mathcal F_1$: the targets are possible, domain, partial or candidate keys, so
-Theorem~\ref{thm:complete} applies; its proof uses R1, R2 and, for the upgrade on
-total columns, only R3 followed by R1, which is the stated instance of R3. R4 is used
-nowhere in that proof. For $\mathcal F_2$: for non-certain targets
+Theorem~\ref{thm:complete} applies; every derivation in its proof uses only
+instances of R1--R3 whose classes are those of a premise or of the target, so only
+instances on the classes of $\mathcal F_1$ occur. R4 is used nowhere in that
+proof. For $\mathcal F_2$: for non-certain targets
 Theorem~\ref{thm:complete} applies without R4, whose premise is a partial key; for a
-certain target there are no partial premises, so $E=\emptyset$ in
+certain target there are no partial premises, so $H(\Sig,K)$ has no edges in
 Theorem~\ref{thm:certain} and implication holds only through conditions (i) and (ii),
 which R1--R3 derive. Any set of classes not containing both partial and certain keys
 is contained in $\mathcal F_1$ or $\mathcal F_2$, and both are finitely axiomatisable,
@@ -1806,7 +2130,7 @@ $\gamma=\ck L$, apply (F2) to $\Sig\models\ck L$: under condition (i) a certain 
 candidate premise $\ck M\in\Sig$ with $M\subseteq L\subseteq K$ implies $\sigma$, so
 it equals $\sigma$, impossible as $\sigma$ is not certain---unless $K\subseteq\NN$,
 where it means $M=K=L$ and $\gamma\equiv\sigma$; under (ii) a premise on
-$M\subseteq L\cap\NN$ implies $\sigma$ by R3, so it is $\sigma$, whence $K\subseteq
+$M\subseteq L\cap\NN$ implies $\sigma$ by R1--R3, so it is $\sigma$, whence $K\subseteq
 \NN$, $L=K$ and $\gamma\equiv\sigma$; under (iii) there are partial premises
 $\pk{M_j}\in\Sig$ with $M_j\subseteq L\subseteq K$ forming a non-2-colourable
 hypergraph on $L\cap N$. Each $\pk{M_j}$ implies $\sigma$, so each equals $\sigma$:
@@ -1823,7 +2147,7 @@ $L=K$, $\gamma\equiv\sigma$; under (iii) partial premises of $\Sig$ inside $L$
 imply $\ck L$, hence $\Sig\setminus\{\sigma\}\models\ck K$, contradicting
 non-redundancy.
 (ii) $\gamma\in\Gamma$ on $L\subseteq K\cap\NN$ of any class. Then $\gamma\models
-\sigma$ by R3, and $\Sig\models\gamma$; if $\gamma$ is not certain, (F1) gives
+\sigma$ by R1--R3, and $\Sig\models\gamma$; if $\gamma$ is not certain, (F1) gives
 $\sigma'\in\Sig$ with $\sigma'\models\gamma\models\sigma$, so $\sigma'=\sigma$ and
 $\gamma\equiv\sigma$; if $\gamma$ is certain, argue as in (i).
 (iii) Partial keys $\gamma_j=\pk{L_j}\in\Gamma$, $L_j\subseteq K$, whose edges
@@ -1862,7 +2186,7 @@ For a non-certain $\sigma$ the test of line~8 is a scan with one subset test per
 key, $O(|\Gamma|\,n)$, correct by (F1) in the proof of
 Theorem~\ref{thm:cover-general}; over all non-certain keys this is $O(|\Sig|^2n)$.
 For a certain $\sigma$ line~10 calls Algorithm~\ref{alg:decide}, whose cost by
-Theorem~\ref{thm:algcost} is $O(|\Gamma|n+m^2n+2^{|N_K|-1}(|N_K|+m))$ with
+Theorem~\ref{thm:algcost} is $O(|\Gamma|n+m^2n+2^{|N_K|-1}(|N_K|+m)\,m\,n)$ with
 $|N_K|\le b$; summed over the $c$ certain keys this gives the second term, and the
 scan part is absorbed into $O(|\Sig|^2n)$. The space bound is that of
 Algorithm~\ref{alg:decide} plus $\Gamma$. The polynomial cases are those of
@@ -1915,14 +2239,25 @@ $L\subseteq\NN$. Lines~12--16 compute conditions (i), (ii) and the edge set of
 $H(\Sig,K)$ of Theorem~\ref{thm:certain}; line~17 is condition (iii).
 
 For Algorithm~\ref{alg:colour}: an edge of size at most one cannot be bichromatic
-(line~1); an edge containing a bichromatic edge is bichromatic, and an isolated
-vertex can be coloured freely, so lines~2--3 preserve 2-colourability. A colouring
-is proper for an edge $e_j$ with fixed vertex $v$ iff some $w\in e_j\setminus\{v\}$
-receives the opposite colour, i.e.\ iff the colouring is proper for the graph edge
-$\{v,w\}$ for some such $w$. So $(V,E)$ is 2-colourable iff for some choice of one
-$w_j$ per $e_j$ the graph $E_2\cup\{\{v_j,w_j\}\}_j$ is bipartite; \textsc{Branch}
-enumerates exactly these choices and returns \textsc{true} iff none yields a
-bipartite graph.
+(line~1). A colouring that is proper for an edge is proper for every superset of it,
+so line~2 preserves 2-colourability; components share no vertex, so $(V,E)$ is
+2-colourable iff each component is. For \textsc{Colourable} we show that it returns
+\textsc{true} iff the partial colouring $(R,B)$ extends to a colouring of all
+vertices that is proper for every edge of $F$. Each step of a call preserves the
+existence of such an extension or returns the right answer: an edge that meets both
+$R$ and $B$ is proper under every extension; an edge inside $R$ or inside $B$ under
+none; and an edge whose only uncoloured vertex is $u$ is proper iff $u$ receives the
+colour the edge lacks, which is the colour the propagation gives it. If an uncoloured
+vertex $u$ lies in exactly one edge $e\in F$, an extension proper for
+$F\setminus\{e\}$ stays proper for $F\setminus\{e\}$ when the colour of $u$ is
+changed, since no other edge of $F$ contains $u$; choosing for $u$ the colour opposite
+to some other vertex of $e$ makes $e$ proper as well, so removing $e$ preserves the
+existence of an extension. With $F=\emptyset$ any extension will do. Otherwise
+the uncoloured vertex $v$ receives one of the two colours in every extension, and the
+two recursive calls cover both. Exchanging the two colours maps proper colourings to
+proper colourings, so starting a component with one vertex red loses no solution
+(lines~4--5). Every call colours at least one vertex more than its caller, so the
+recursion terminates.
 \qed
 
 \noindent\textbf{Proof of Theorem~\ref{thm:algcost}.}
@@ -1935,27 +2270,39 @@ number of loop variables, $O(n)$ bits.
 \emph{Lines~12--17.} The same scan collects at most $|\Sig|$ edges, each a bit vector
 of length $n$, so $|E|\le|\Sig|$ and the edge set occupies $O(mn)$ bits.
 
-\emph{Algorithm~\ref{alg:colour}, lines~1--4.} Removing non-minimal edges compares
+\emph{Algorithm~\ref{alg:colour}, lines~1--3.} Removing non-minimal edges compares
 each pair of edges by a subset test: $O(m^2n)$ time, no extra space beyond a mark
-bit per edge. Removing isolated vertices and splitting $E$ into $E_2$ and $E_3$ is
-one pass over the edges, $O(mn)$.
+bit per edge. The components follow from one union--find pass over the edges,
+$O(mn)$ time with one pointer per edge.
 
-\emph{\textsc{Branch}.} The recursion tree has depth $h$ and branching factor
-$|e_j|-1$ at level $j$, hence $\prod_{j}(|e_j|-1)$ leaves and at most twice as many
-nodes. Every leaf runs a bipartiteness test by breadth-first search on the graph
-$E_2\cup\{\{v_j,w_j\}\}_j$, which has $|N_K|$ vertices and $|E_2|+h\le m$ edges, in
-time $O(|N_K|+m)$; internal nodes do $O(1)$ work per child. This gives the third
-term. The recursion stack holds one loop index per level, $O(h)$ words, and the
-graph passed down is the fixed $E_2$ plus one pending edge per level, so it is
-represented in place by the stack: the working space of \textsc{Branch} is
-$O(h)$ words plus the $O(|N_K|+m)$ words of the breadth-first search, reused at every
-leaf.
+\emph{One call of \textsc{Colourable}.} $R$, $B$ and every edge are bit vectors of
+length $n$, and $F$ is a bit vector over the $m$ edges. A propagation pass inspects
+every edge of $F$ with a constant number of bit-vector operations, $O(mn)$, and every
+pass but the last colours a new vertex, so propagation takes at most $|N_K|+1$
+passes, $O(|N_K|\,m\,n)$. A pass of the second loop finds the vertices that lie in
+at least two edges of $F$ by folding the edges into two bit vectors (once, at least
+twice), $O(mn)$, and every pass but the last removes an edge, so this loop takes
+$O(m^2n)$. Choosing $v$ is one more pass. A call therefore costs
+$O((|N_K|+m)\,m\,n)$ besides its recursive calls.
 
-The three bounds in the statement follow: (1) lines~1--11 only; (2) $h=0$ makes the
-product empty and the third term a single bipartiteness test; (3) since the edges are
-minimal and distinct, each $|e_j|\le|N_K|$, and enumerating all $2^{|N_K|-1}$
-colourings with a fixed colour for one vertex is an alternative bound on the number of
-leaves that is never worse.
+\emph{Number of calls.} For a component with $k\ge2$ vertices the first call
+starts with one vertex coloured, and every other call is made with one vertex more
+coloured than its caller. A path from the first call therefore has at most $k-1$
+two-way branchings, so there are at most $2^{k-1}$ leaves and fewer than $2^k$ calls
+in all. The components partition at most $|N_K|$ vertices, and
+$2^a+2^b\le2^{a+b}$ for $a,b\ge1$, so there are at most $2^{|N_K|}$ calls. This gives
+the third term.
+
+\emph{Space.} The recursion is at most $|N_K|$ deep, and each level keeps $R$, $B$
+and $F$, $O(n+m)$ bits; the folding vectors are reused. This gives the
+$|N_K|\,(m+n)$ term of the space bound.
+
+The three bounds in the statement follow: (1) lines~1--11 only; (2) fixed-parameter
+tractability is the third term; (3) if every edge has two vertices, $E$ is a graph,
+and in the first call for a component every edge with one coloured endpoint forces
+the other, so propagation colours the whole connected component and every edge ends
+up either bichromatic or inside one colour. Each component is decided by one call,
+and the search is polynomial.
 \qed
 
 
@@ -1965,14 +2312,16 @@ leaves that is never worse.
 {\sloppy For $\Sig_0$ of Section~\ref{sec:why} and the target $\ck{\mathit{Salary},
 \mathit{Job}}$, lines~12--16 find no certain key and no key inside $K\cap\NN=\emptyset$,
 and collect the single edge $\{\mathit{Salary},\mathit{Job}\}$. In
-Algorithm~\ref{alg:colour}, $h=0$, the graph with one edge is bipartite, and the
-answer is \textsc{false}: the certain key is not implied, matching the counterexample
-of Section~\ref{sec:why}. For the triangle of Example~\ref{ex:triangle} the graph is
-$C_3$, not bipartite, and the answer is \textsc{true}. For the Hockey key
+Algorithm~\ref{alg:colour} the search starts with $\mathit{Salary}$ red, propagation
+colours $\mathit{Job}$ blue and drops the edge, $F$ becomes empty, and the answer is
+\textsc{false}: the certain key is not implied, matching the counterexample of
+Section~\ref{sec:why}. For the triangle of Example~\ref{ex:triangle} one vertex starts
+red, propagation colours both other vertices blue, the edge between them lies inside
+$B$, and the answer is \textsc{true} after one call. For the Hockey key
 $\pk{\mathit{playerID},\mathit{coachID},\mathit{hofID}}$ and the certain target on the
-same three columns, $h=1$ and \textsc{Branch} tries the two edges
-$\{\mathit{playerID},\mathit{coachID}\}$ and $\{\mathit{playerID},\mathit{hofID}\}$,
-both bipartite, so the answer is \textsc{false}.
+same three columns, the search starts with $\mathit{playerID}$ red; nothing is forced,
+but $\mathit{coachID}$ lies in no other edge, so the edge is removed and the answer is
+\textsc{false} without branching.
 \par}
 \end{example}
 
@@ -1983,7 +2332,7 @@ Figure~\ref{fig:expB} fixes $|\Sig|=200$, $k=\lfloor n/3\rfloor$ and lets $n$ gr
 from 8 to 32. Random keys over many columns are rarely comparable, so the cover
 retains 12\,\% of the input at $n=8$ but 98\,\% at $n=32$; the occurrence ratio
 follows the same curve. Running times stay in the millisecond range (at most
-3.7\,ms for the fragments and 6.7\,ms for the combined class at $n=32$), so neither
+1.3\,ms for the fragments and 2.5\,ms for the combined class at $n=32$), so neither
 algorithm is sensitive to the schema size as such; the combined class pays only
 for the hypergraph construction, whose edges are few because wide random keys
 seldom nest.
@@ -1994,7 +2343,7 @@ seldom nest.
 \caption{Experiment B: $|\Sig|=200$ random keys, \sql{NOT NULL} on $n/3$ columns,
 schema size growing from 8 to 32 columns.}
 \label{fig:expB}
-\Description{}
+\Description{Line charts against schema size from 8 to 32 columns: the share of keys the cover keeps rises from 12 to 98 percent; running time stays below 3 ms.}
 \end{figure*}
 
 \FloatBarrier
@@ -2003,21 +2352,18 @@ schema size growing from 8 to 32 columns.}
 Figure~\ref{fig:expDboth} and Table~\ref{tab:expDratio} in
 Section~\ref{sec:experiments} report Experiment D as speed-ups. This appendix gives
 the absolute numbers behind them, per engine. Figure~\ref{fig:expD} and
-Table~\ref{tab:expD} are the SQLite run (SQLite~3.45, in memory), with a fourth
+Table~\ref{tab:expD} are the SQLite run (SQLite~3.54, in memory), with a fourth
 panel showing the number of indexes created; Figure~\ref{fig:expDpg} and
-Table~\ref{tab:expDpg} are the PostgreSQL~16 run on the same inputs, covers and
+Table~\ref{tab:expDpg} are the PostgreSQL~18.6 run on the same inputs, covers and
 workloads. Both tables list, for each fragment and input size, the keys of input
 and cover, the filtered indexes and trigger probes created, and the seconds for
 1500 inserts, 600 updates and the integrity check, input / cover, as means over 5
 runs. The number of indexes and probes is the same on both engines, since the
 schemas are the same; only the times differ. Two differences between the engines
-stand out. Absolute times on PostgreSQL are 10--50 times higher, as each statement
+stand out. Absolute times on PostgreSQL are 2 to 30 times higher, as each statement
 is a client--server round trip with its own savepoint rather than a call into an
-in-process database. And the integrity check of the input is far slower on
-PostgreSQL at large $|\Sig|$ (110--300\,s against 0.2--0.7\,s), because the planner
-considers every one of the table's 400--600 partial indexes when it plans each
-self-join, as discussed in Section~\ref{sec:experiments}; SQLite's planner does
-not, so its check gains only 1.4--3.6 times from the cover.
+in-process database. And the integrity check gains more on PostgreSQL (3.8--5.1
+times at $|\Sig|=120$, against 1.2--2.8 on SQLite).
 
 \begin{figure*}[t]
 \centering
@@ -2027,16 +2373,16 @@ filtered unique indexes and pattern-dispatched triggers on an 8-column table;
 1500 inserts, 600 updates, a full integrity check, and the number of indexes
 created.}
 \label{fig:expD}
-\Description{}
+\Description{Line charts of SQLite seconds and index counts against the number of keys, input dashed and cover solid, for the three fragments.}
 \end{figure*}
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.9\textwidth]{figs/expD_pg.pdf}
-\caption{Experiment D on PostgreSQL~16: enforcing the input (dashed) and its
+\caption{Experiment D on PostgreSQL~18.6: enforcing the input (dashed) and its
 cover (solid) with native \sql{NULLS NOT DISTINCT} and partial unique indexes and
 PL/pgSQL pattern-dispatched triggers; same workload as Figure~\ref{fig:expD}.}
 \label{fig:expDpg}
-\Description{}
+\Description{Line charts of PostgreSQL seconds against the number of keys, input dashed and cover solid, for the three fragments.}
 \end{figure*}
 
 \begin{table*}[t]
@@ -2050,21 +2396,21 @@ the integrity check, input / cover}
 \toprule
 Fragment & $|\Sig|$ & $|\Gamma|$ & \multicolumn{2}{c}{indexes} & \multicolumn{2}{c}{probes} & \multicolumn{2}{c}{inserts} & \multicolumn{2}{c}{updates} & \multicolumn{2}{c}{check} \\
 \midrule
-$\mathcal F_1$ & 10 & 7.4 & 38 & 31 & 64 & 54 & 0.09 & 0.07 & 0.05 & 0.04 & 0.12 & 0.12 \\
-& 40 & 16.8 & 154 & 63 & 260 & 110 & 0.58 & 0.15 & 0.41 & 0.09 & 0.23 & 0.19 \\
-& 120 & 27.0 & 392 & 84 & 618 & 140 & 3.22 & 0.22 & 1.57 & 0.12 & 0.24 & 0.18 \\
-$\mathcal F_2$ & 10 & 8.0 & 27 & 25 & 40 & 38 & 0.06 & 0.05 & 0.04 & 0.04 & 0.11 & 0.09 \\
-& 40 & 18.4 & 128 & 54 & 200 & 86 & 0.50 & 0.12 & 0.43 & 0.08 & 0.45 & 0.24 \\
-& 120 & 19.8 & 421 & 55 & 685 & 94 & 3.90 & 0.11 & 3.44 & 0.07 & 0.71 & 0.20 \\
-combined & 10 & 7.2 & 42 & 34 & 73 & 62 & 0.11 & 0.07 & 0.08 & 0.06 & 0.15 & 0.17 \\
-& 40 & 17.4 & 219 & 83 & 402 & 154 & 1.18 & 0.23 & 0.93 & 0.19 & 0.42 & 0.30 \\
-& 120 & 26.6 & 565 & 92 & 1009 & 164 & 6.95 & 0.19 & 4.92 & 0.14 & 0.59 & 0.23 \\
+$\mathcal F_1$ & 10 & 7.4 & 38 & 31 & 64 & 54 & 0.03 & 0.02 & 0.04 & 0.02 & 0.06 & 0.06 \\
+& 40 & 16.8 & 154 & 63 & 260 & 110 & 0.19 & 0.06 & 0.35 & 0.07 & 0.13 & 0.11 \\
+& 120 & 27.0 & 392 & 84 & 618 & 140 & 0.86 & 0.08 & 1.86 & 0.10 & 0.12 & 0.10 \\
+$\mathcal F_2$ & 10 & 8.0 & 27 & 25 & 40 & 38 & 0.02 & 0.02 & 0.02 & 0.02 & 0.06 & 0.06 \\
+& 40 & 18.4 & 128 & 54 & 200 & 86 & 0.17 & 0.05 & 0.43 & 0.07 & 0.24 & 0.16 \\
+& 120 & 19.8 & 421 & 55 & 685 & 94 & 1.12 & 0.04 & 3.80 & 0.05 & 0.37 & 0.13 \\
+combined & 10 & 7.2 & 42 & 34 & 73 & 62 & 0.04 & 0.03 & 0.05 & 0.04 & 0.09 & 0.09 \\
+& 40 & 17.4 & 219 & 83 & 402 & 154 & 0.37 & 0.08 & 0.89 & 0.17 & 0.24 & 0.17 \\
+& 120 & 26.6 & 565 & 92 & 1009 & 164 & 2.39 & 0.07 & 5.16 & 0.12 & 0.29 & 0.14 \\
 \bottomrule
 \end{tabular}}
 \end{table*}
 \begin{table*}[t]
 \centering
-\caption{Experiment D on PostgreSQL~16, means over 5 runs, in the layout of
+\caption{Experiment D on PostgreSQL~18.6, means over 5 runs, in the layout of
 Table~\ref{tab:expD}: seconds for 1500 inserts, 600 updates and the integrity
 check, input / cover}
 \label{tab:expDpg}
@@ -2073,39 +2419,220 @@ check, input / cover}
 \toprule
 Fragment & $|\Sig|$ & $|\Gamma|$ & \multicolumn{2}{c}{indexes} & \multicolumn{2}{c}{probes} & \multicolumn{2}{c}{inserts} & \multicolumn{2}{c}{updates} & \multicolumn{2}{c}{check} \\
 \midrule
-$\mathcal F_1$ & 10 & 7.4 & 38 & 31 & 64 & 54 & 2.02 & 1.86 & 1.27 & 1.14 & 1.39 & 0.41 \\
- & 40 & 16.8 & 154 & 63 & 260 & 110 & 13.30 & 3.26 & 6.92 & 2.40 & 3.25 & 0.89 \\
- & 120 & 27.0 & 392 & 84 & 618 & 140 & 49.52 & 3.72 & 23.64 & 3.37 & 110.07 & 1.31 \\
-$\mathcal F_2$ & 10 & 8.0 & 27 & 25 & 40 & 38 & 1.78 & 1.68 & 1.32 & 1.14 & 0.69 & 0.54 \\
- & 40 & 18.4 & 128 & 54 & 200 & 86 & 14.68 & 3.14 & 7.39 & 2.30 & 3.23 & 0.95 \\
- & 120 & 19.8 & 421 & 55 & 685 & 94 & 76.69 & 2.42 & 22.93 & 2.32 & 120.95 & 0.75 \\
-combined & 10 & 7.2 & 42 & 34 & 73 & 62 & 2.74 & 2.68 & 1.76 & 1.62 & 0.62 & 0.48 \\
- & 40 & 17.4 & 219 & 83 & 402 & 154 & 30.69 & 7.31 & 13.59 & 4.13 & 5.32 & 1.24 \\
- & 120 & 26.6 & 565 & 92 & 1009 & 164 & 127.65 & 5.74 & 37.81 & 3.57 & 156.32 & 1.11 \\
+$\mathcal F_1$ & 10 & 7.4 & 38 & 31 & 64 & 54 & 0.79 & 0.65 & 0.49 & 0.43 & 0.19 & 0.20 \\
+ & 40 & 16.8 & 154 & 63 & 260 & 110 & 4.15 & 1.19 & 2.12 & 0.84 & 0.70 & 0.34 \\
+ & 120 & 27.0 & 392 & 84 & 618 & 140 & 13.90 & 1.30 & 6.18 & 1.01 & 1.53 & 0.40 \\
+$\mathcal F_2$ & 10 & 8.0 & 27 & 25 & 40 & 38 & 0.70 & 0.69 & 0.49 & 0.49 & 0.30 & 0.26 \\
+ & 40 & 18.4 & 128 & 54 & 200 & 86 & 4.59 & 1.13 & 2.26 & 0.80 & 0.87 & 0.41 \\
+ & 120 & 19.8 & 421 & 55 & 685 & 94 & 25.21 & 0.97 & 6.99 & 0.74 & 1.42 & 0.28 \\
+combined & 10 & 7.2 & 42 & 34 & 73 & 62 & 1.03 & 0.95 & 0.66 & 0.63 & 0.23 & 0.20 \\
+ & 40 & 17.4 & 219 & 83 & 402 & 154 & 9.75 & 2.37 & 4.28 & 1.30 & 0.92 & 0.47 \\
+ & 120 & 26.6 & 565 & 92 & 1009 & 164 & 37.25 & 1.88 & 10.67 & 1.02 & 1.53 & 0.34 \\
 \bottomrule
 \end{tabular}}
 \end{table*}
 \FloatBarrier
+\section{A Native Index for Partial and Certain Keys}\label{app:native}
+
+The emulation of Section~\ref{sec:indexing} spends $2^{|N_K|}$ filtered indexes and
+a trigger on every partial or certain key. For the paragraph \emph{Native
+enforcement} of Experiment~D we built a prototype index access method for
+PostgreSQL~18 that enforces such a key in a single B-tree. The index is not a
+contribution of this paper, and its design and full evaluation are left to future
+work; here it serves only as an enforcement whose cost does not grow
+with the number of null patterns. It wraps PostgreSQL's B-tree implementation and
+reuses its pages, WAL records, recovery and vacuum. Inserts that may conflict are
+serialised and wait for one another as B-tree uniqueness does, which is correct
+under \sql{READ COMMITTED}. In the version
+used here the index serves no queries, must be created on an empty table, and is not
+a constraint in the catalogue.
+
+\paragraph{Validation.} In 556 runs of random inserts and updates, for both key
+classes, 0--2 \sql{NOT NULL} and 1--3 nullable key columns and every setting of
+the index, every
+accept or reject decision equals that of a brute-force implementation of
+Definition~\ref{def:keys}. A second session's conflicting insert waits for the first
+and fails if it commits; eight sessions inserting random rows leave no violating
+pair; after an immediate shutdown the index still rejects duplicates of committed
+rows. With one key and $10^5$ rows an insert costs 5--10\,\textmu s with a
+\sql{NOT NULL} key column, against 28--337\,\textmu s for the emulation. The source,
+tests and raw results are in \texttt{experiments/D\_native} and
+\texttt{results/D\_native} of the artifact repository.
+
+\paragraph{Experiment D.} Table~\ref{tab:native-expD} gives the absolute times
+behind the paragraph \emph{Native enforcement}, as means over the 5 key sets and 2
+repetitions, the four runs of each configuration interleaved in alternating order.
+Under the emulation the cover's gain grows with $|\Sig|$ because each partial or
+certain key costs $2^{|N_K|}$ indexes and as many trigger probes. Under the native
+index each key costs one index, the cover still removes 77--84\,\% of them at
+$|\Sig|=120$, and the time falls 2.5--2.7 times for inserts and 1.5--1.6 times for
+updates: the fixed cost of each statement (the row, its savepoint and the client
+round trip) is now a large share of the total.
+
+
+\paragraph{At scale.} Table~\ref{tab:native-xl} repeats the $10^6$-row workload of
+Table~\ref{tab:expDxl} with the native index, input and cover run one after the other
+as there, once per key set. Both accept the same statements as each other and as
+the emulation. The native index enforces the input 4.3--13 times faster than the
+emulation and the cover 3.7--9.0 times; the cover's own gain, 1.3--4.1 on inserts and
+1.2--3.6 on updates, is smaller than under the emulation (1.2--8.6), because each key
+now costs one index rather than a family, and it follows the share of keys removed
+exactly.
+
+\begin{table*}[t]
+\centering
+\caption{Experiment D at scale with the native index ($10^6$ inserts, $2\cdot10^5$
+updates, the key sets of Table~\ref{tab:expDxl}), sorted by the share of keys the
+cover removes: seconds input / cover, speed-up = input / cover, and how many times
+faster the native index is than the emulation}
+\label{tab:native-xl}
+\small
+\begin{tabular}{r r r r r r r r}
+\toprule
+ & & & \multicolumn{3}{c}{native} & \multicolumn{2}{c}{vs.\ emulation} \\
+\cmidrule(lr){4-6}\cmidrule(lr){7-8}
+$|\Sig|$ & $|\Gamma|$ & removed & ins (s) & ins & upd & $\Sig$ & $\Gamma$ \\
+\midrule
+30 & 19 & 37\,\% & 440/339 & 1.3 & 1.2 & 9.0 & 9.0 \\
+40 & 23 & 43\,\% & 729/495 & 1.5 & 1.5 & 6.5 & 4.3 \\
+50 & 25 & 50\,\% & 620/385 & 1.6 & 1.6 & 8.8 & 6.9 \\
+50 & 23 & 54\,\% & 835/420 & 2.0 & 2.1 & 13.0 & 6.6 \\
+40 & 18 & 55\,\% & 621/307 & 2.0 & 2.2 & 11.1 & 5.7 \\
+30 & 13 & 57\,\% & 364/172 & 2.1 & 2.0 & 4.3 & 4.4 \\
+30 & 12 & 60\,\% & 331/147 & 2.3 & 2.4 & 5.6 & 5.6 \\
+40 & 13 & 68\,\% & 669/162 & 4.1 & 3.6 & 7.9 & 6.9 \\
+50 & 16 & 68\,\% & 542/165 & 3.3 & 3.2 & 9.7 & 3.7 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{Real tables.} Table~\ref{tab:native-e} enforces the mined keys of
+Experiment~E with the native index for partial and certain keys, the other keys as in
+the emulation, and both schemes measured afresh in interleaved runs. The native
+index needs one index per key and no triggers; its indexes are somewhat larger than
+filtered ones, and the cover saves about as much storage
+under both schemes. At level~9 every mined partial and certain key has a
+\sql{NOT NULL} column set, so both schemes create the same \sql{UNIQUE} indexes.
+At level~1 \textsc{TeamSplits}, run once because of its 3705 indexes, takes
+23--26\,s under each scheme, input and cover alike, a spread larger than what the
+cover saves on all other tables together; on the other tables the cover saves 9\,\% of the insert time on
+Hockey and 22\,\% on VOC, against 38\,\% under the emulation. On \textsc{Teams} the
+input takes 1.3\,s instead of 52\,s.
+
+\begin{table*}[t]
+\centering
+\caption{Experiment E with the native index: the mined keys (input) and their cover
+enforced on the real tables with their profiled \sql{NOT NULL} columns, the four runs of
+each table interleaved; indexes, index MiB and insert seconds, input / cover}
+\label{tab:native-e}
+\small
+\adjustbox{max width=\columnwidth}{\begin{tabular}{l rr rr rr}
+\toprule
+ & \multicolumn{2}{c}{indexes} & \multicolumn{2}{c}{MiB} & \multicolumn{2}{c}{inserts (s)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+ & emul. & native & emul. & native & emul. & native \\
+\midrule
+Hockey, level 1 & 5276/4847 & 4810/4502 & 598/578 & 597/577 & 92.3/66.6 & 33.3/30.0 \\
+\quad without \textsc{TeamSplits} & 1568/1142 & 1102/797 & 182/162 & 181/162 & 69.4/42.9 & 7.0/6.4 \\
+Hockey, level 9 & 273/171 & 273/171 & 12/8 & 12/8 & 0.8/0.7 & 0.8/0.7 \\
+VOC, level 1 & 320/230 & 239/175 & 56/41 & 59/44 & 6.8/4.2 & 2.3/1.8 \\
+\bottomrule
+\end{tabular}}
+\end{table*}
+
+\paragraph{Concurrency.} Table~\ref{tab:native-conc} inserts $3\cdot10^4$ rows
+drawn as in Experiment~D (values in $[0,10^4)$) with $C\in\{1,4,8\}$ sessions,
+the rows split round-robin, one row per transaction with \sql{synchronous\_commit}
+off, for one key set of 40 and one of 50 keys. After each run the final table is
+reloaded into a table that enforces the input keys with the native index, and every
+row it rejects counts as violating. Four schemes are compared: the native index under
+\sql{READ COMMITTED}; the emulation with \sql{LOCK TABLE} in \sql{SHARE ROW EXCLUSIVE}
+mode before each insert; the emulation under \sql{SERIALIZABLE}, a transaction
+retried on serialization failure at most 50 times; and the emulation under
+\sql{READ COMMITTED} without a lock. The lock serialises the inserts, so its
+throughput does not grow with $C$; \sql{SERIALIZABLE} is correct but retries up to 29{,}174 times and gives up on up to 200
+rows; without the lock the emulation is fastest but admits 1 and 7 violating rows
+at $C=4$ and $8$ on the first key set. The native index admits none, needs no
+retry and is 23--82 times faster than the locked emulation on the input; the cover
+raises its throughput 1.4--2.9 times. Which rows are accepted depends on the order
+in which concurrent inserts commit, so the accepted counts differ slightly between
+runs with $C>1$. Each configuration ran once.
+
+\begin{table*}[t]
+\centering
+\caption{Concurrent inserts: $3\cdot10^4$ rows split over $C$ sessions, one row per
+transaction; rows per second for input / cover, and the most retries, rows given up
+after 50 retries and violating rows of any run of the scheme}
+\label{tab:native-conc}
+\small
+\adjustbox{max width=\columnwidth}{\begin{tabular}{l l r r r r r r}
+\toprule
+ & & \multicolumn{3}{c}{rows/s, input / cover} & & & \\
+\cmidrule(lr){3-5}
+keys & scheme & $C=1$ & $C=4$ & $C=8$ & retries & given up & violating \\
+\midrule
+40/13 & native & 3775/10987 & 8390/13209 & 7214/11724 & 0 & 0 & 0 \\
+ & emul., lock & 163/1141 & 161/1080 & 156/1078 & 0 & 0 & 0 \\
+ & emul., \sql{SERIALIZABLE} & 178/1221 & 184/2382 & 166/3118 & 20462 & 110 & 0 \\
+ & emul., no lock & 188/1447 & 504/4665 & 616/7608 & 0 & 0 & 7 \\
+\midrule
+50/23 & native & 3304/5987 & 6711/9647 & 5789/7911 & 0 & 0 & 0 \\
+ & emul., lock & 96/427 & 82/406 & 80/394 & 0 & 0 & 0 \\
+ & emul., \sql{SERIALIZABLE} & 97/445 & 90/580 & 73/460 & 29174 & 200 & 0 \\
+ & emul., no lock & 90/495 & 267/1509 & 350/2199 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}}
+\end{table*}
+\begin{table*}[t]
+\centering
+\caption{Experiment D on PostgreSQL~18.6 with the emulation of
+Section~\ref{sec:indexing} and with the native index, means over 5 key sets and 2
+repetitions: indexes, and seconds for 1500 inserts and 600 updates, input / cover}
+\label{tab:native-expD}
+\small
+\adjustbox{max width=\textwidth}{\begin{tabular}{l r r rr rr rr rr rr rr}
+\toprule
+ & & & \multicolumn{4}{c}{indexes} & \multicolumn{4}{c}{inserts} & \multicolumn{4}{c}{updates} \\
+\cmidrule(lr){4-7}\cmidrule(lr){8-11}\cmidrule(lr){12-15}
+ & & & \multicolumn{2}{c}{emulation} & \multicolumn{2}{c}{native} & \multicolumn{2}{c}{emulation} & \multicolumn{2}{c}{native} & \multicolumn{2}{c}{emulation} & \multicolumn{2}{c}{native} \\
+Fragment & $|\Sig|$ & $|\Gamma|$ & $\Sig$ & $\Gamma$ & $\Sig$ & $\Gamma$ & $\Sig$ & $\Gamma$ & $\Sig$ & $\Gamma$ & $\Sig$ & $\Gamma$ & $\Sig$ & $\Gamma$ \\
+\midrule
+$\mathcal F_1$ & 10 & 7.4 & 38 & 31 & 10 & 7 & 0.87 & 0.70 & 0.22 & 0.21 & 0.52 & 0.47 & 0.24 & 0.24 \\
+ & 40 & 16.8 & 154 & 63 & 40 & 17 & 4.37 & 1.26 & 0.34 & 0.24 & 2.22 & 0.91 & 0.51 & 0.45 \\
+ & 120 & 27.0 & 392 & 84 & 120 & 27 & 14.64 & 1.36 & 0.71 & 0.26 & 6.68 & 1.05 & 0.78 & 0.52 \\
+$\mathcal F_2$ & 10 & 8.0 & 27 & 25 & 10 & 8 & 0.77 & 0.73 & 0.21 & 0.20 & 0.53 & 0.52 & 0.29 & 0.28 \\
+ & 40 & 18.4 & 128 & 54 & 40 & 18 & 4.89 & 1.27 & 0.31 & 0.24 & 2.42 & 0.88 & 0.49 & 0.44 \\
+ & 120 & 19.8 & 421 & 55 & 120 & 20 & 26.37 & 0.98 & 0.65 & 0.24 & 7.44 & 0.77 & 0.77 & 0.48 \\
+combined & 10 & 7.2 & 42 & 34 & 10 & 7 & 1.13 & 1.02 & 0.22 & 0.22 & 0.72 & 0.68 & 0.34 & 0.34 \\
+ & 40 & 17.4 & 219 & 83 & 40 & 17 & 10.42 & 2.48 & 0.40 & 0.28 & 4.60 & 1.40 & 0.58 & 0.48 \\
+ & 120 & 26.6 & 565 & 92 & 120 & 27 & 39.65 & 1.97 & 0.78 & 0.32 & 11.48 & 1.08 & 0.85 & 0.52 \\
+\bottomrule
+\end{tabular}}
+\end{table*}
+\clearpage
+
 \section{Logs and Reproducibility}\label{app:repro}
 
 All artifacts---code, data, raw results and the build of both versions of this
-paper---are available at \url{https://github.com/lshelloworld/one-cover-artifacts}.
+paper---are available at \url{https://anonymous.4open.science/r/one-cover-artifacts}.
 Every generated input and its cover are written to \texttt{covers\_log.jsonl}
 (560 records: fragment, $n$, $k$, the \sql{NOT NULL} set, the keys of input and
 cover in the notation of this paper, their counts and attribute occurrences, and
 the time) and \texttt{db2\_log.jsonl} (75 records, adding the numbers of indexes
 and probes, accepted inserts and updates, and the three timings for input and
-cover; \texttt{db\_log.jsonl} holds the naive-trigger run, and
+cover; \texttt{naive\_clean.jsonl} holds the run without indexes and with one
+trigger per key, and
 \texttt{db2\_pg\_log.jsonl} the PostgreSQL run with the same fields plus the
 index-creation time and a flag recording that the accepted statements agree
 with the SQLite run). The scripts
-\texttt{exp\_covers.py}, \texttt{exp\_db2.py} and \texttt{exp\_db.py} regenerate
-all figures from fixed random seeds, and \texttt{experiments/pg/} holds the
+\texttt{exp\_covers.py} and \texttt{exp\_db2.py} regenerate
+all figures from fixed random seeds, and \texttt{results/D\_enforcement/pg/} holds the
 generated PostgreSQL schemas (input and cover for each fragment and input size).
+\texttt{results/README.md} says which file holds each reported run.
 \texttt{exp\_db2\_pg.py} replays Experiment~D against a PostgreSQL server
 through \texttt{psycopg2}, regenerating the inputs and workloads from the same
-seed and asserting on every run that they match the logged ones; the SQLite runs
-take under ten minutes, the PostgreSQL run about two and a half hours on one core.
+seed and asserting on every run that they match the logged ones; the SQLite run
+takes about three minutes, the PostgreSQL run about half an hour on one core.
 
 
 

@@ -1,0 +1,50 @@
+[
+ {
+  "fragment": "F1",
+  "m": 120,
+  "input": {
+   "keys": 120,
+   "indexes": 390,
+   "plan_ms": 117.08899999999997,
+   "exec_ms": 2082.565000000001
+  },
+  "cover": {
+   "keys": 29,
+   "indexes": 92,
+   "plan_ms": 6.154,
+   "exec_ms": 503.862
+  }
+ },
+ {
+  "fragment": "F2",
+  "m": 120,
+  "input": {
+   "keys": 120,
+   "indexes": 405,
+   "plan_ms": 174.8280000000001,
+   "exec_ms": 3154.285999999999
+  },
+  "cover": {
+   "keys": 26,
+   "indexes": 79,
+   "plan_ms": 5.915,
+   "exec_ms": 914.9710000000001
+  }
+ },
+ {
+  "fragment": "ALL",
+  "m": 120,
+  "input": {
+   "keys": 120,
+   "indexes": 587,
+   "plan_ms": 201.23800000000006,
+   "exec_ms": 2958.677000000001
+  },
+  "cover": {
+   "keys": 29,
+   "indexes": 97,
+   "plan_ms": 7.222000000000002,
+   "exec_ms": 768.0149999999999
+  }
+ }
+]
