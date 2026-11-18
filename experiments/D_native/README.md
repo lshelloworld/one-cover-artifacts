@@ -106,3 +106,8 @@ lock, the emulation under SERIALIZABLE with up to 50 retries per row, and the em
 COMMITTED without a lock. The final table of each run is reloaded into a table enforced by the native
 index for the input keys; every rejected row counts as a violation. Output:
 `results/D_native/concurrency.jsonl`, console log `concurrency.log`. About 1.5 hours (30 minutes for key set 1, an hour for key set 2).
+
+The reported results are three repetitions of this, interleaved in alternating order on a quiet machine
+(`--rep R`, `--reverse`; runner `results/D_native/run_concurrency_reps.sh`, about 4.5 hours):
+`results/D_native/concurrency_reps.jsonl`; the papers give medians. `concurrency.jsonl` is the first,
+single run.

@@ -1146,10 +1146,11 @@ concurrent waiting and crash recovery. On the PostgreSQL workload at $|\Sig|=120
 same statements accepted. Each key now costs one index, and the fixed cost of each
 statement takes a larger share. The index is not a contribution of this paper; its
 design and full evaluation are left to future work. With 4 or 8
-clients inserting $3\cdot10^4$ rows (40 or 50 keys), the emulation stays correct only under a table lock (80--1140 rows/s for
-any number of clients) or \sql{SERIALIZABLE} (up to 29{,}000
-retries); without either it let 7 violating rows in. The native index
-needs neither and reaches 3300--13{,}200 rows/s; the cover raises this 1.4--2.9 times.
+clients inserting $3\cdot10^4$ rows (40 or 50 keys, medians of three runs), the
+emulation stays correct only under a table lock (86--1270 rows/s for any number of
+clients) or \sql{SERIALIZABLE} (up to 31{,}000 retries); without either it let
+violating rows in on 15 of 24 runs. The native index needs neither and reaches
+3400--13{,}700 rows/s; the cover raises this 1.3--2.6 times.
 
 \paragraph{Where the redundancy comes from.} Dropping each key implied by another
 on the \emph{same} column set removes at most 19\,\% of the keys. Dropping each key

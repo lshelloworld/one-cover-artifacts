@@ -17,8 +17,10 @@ probability 0.3) are split round-robin over C sessions, each inserting its share
              to count the violations it lets through
 After each run the final table is checked against the input keys: it is reloaded into a table enforced by
 the native index, one row at a time, and every rejected row counts as a violation.
+Repetitions: --rep R tags each record with repetition R (resumable per repetition); --reverse runs the
+configurations of that repetition in reverse order, so that repetitions interleave in alternating order.
 Usage: exp_concurrency.py --keyset 1 --m 40 --rows 100000 --clients 1,4,8 [--schemes ...] [--cap 900]
-       [--stop HH:MM] [--out results/D_native/concurrency.jsonl]"""
+       [--stop HH:MM] [--rep R] [--reverse] [--out results/D_native/concurrency.jsonl]"""
 import argparse, json, os, random, threading, time
 import psycopg2, psycopg2.errors
 
@@ -28,6 +30,7 @@ ap.add_argument('--rows', type=int, default=100000); ap.add_argument('--values',
 ap.add_argument('--clients', default='1,4,8'); ap.add_argument('--schemes', default='native,emul_lock,emul_ser,emul_rc')
 ap.add_argument('--cap', type=float, default=900); ap.add_argument('--stop', default='')
 ap.add_argument('--out', default='results/D_native/concurrency.jsonl')
+ap.add_argument('--rep', type=int, default=0); ap.add_argument('--reverse', action='store_true')
 A = ap.parse_args()
 os.environ['ONECOVER_KEYSET'] = str(A.keyset)
 
@@ -100,19 +103,19 @@ if __name__ == '__main__':
     done = set()
     if os.path.exists(A.out):
         for l in open(A.out):
-            r = json.loads(l); done.add((r['keyset'], r['m'], r['rows'], r['clients'], r['side'], r['scheme']))
+            r = json.loads(l); done.add((r['keyset'], r['m'], r['rows'], r['clients'], r['side'], r['scheme'], r.get('rep', 0)))
     out = open(A.out, 'a'); chk = psycopg2.connect(**DSN); chk.autocommit = True
-    for C in map(int, A.clients.split(',')):
-        for side, keys in (('input', S), ('cover', G)):
-            for scheme in A.schemes.split(','):
-                if (A.keyset, A.m, A.rows, C, side, scheme) in done: continue
+    configs = [(C, side, keys, scheme) for C in map(int, A.clients.split(','))
+               for side, keys in (('input', S), ('cover', G)) for scheme in A.schemes.split(',')]
+    for C, side, keys, scheme in (configs[::-1] if A.reverse else configs):
+                if (A.keyset, A.m, A.rows, C, side, scheme, A.rep) in done: continue
                 if late(): print('stopped: past', A.stop, flush=True); raise SystemExit
                 res, final = run(scheme, keys, NN, rows, C)
                 bad = violations(chk, S, NN, final)
-                rec = dict(keyset=A.keyset, m=A.m, rows=A.rows, values=A.values, clients=C, side=side, scheme=scheme,
+                rec = dict(keyset=A.keyset, m=A.m, rows=A.rows, values=A.values, clients=C, side=side, scheme=scheme, rep=A.rep,
                            keys=len(keys), violations=bad, load=os.getloadavg(), **res)
                 out.write(json.dumps(rec) + '\n'); out.flush()
-                print(f"conc ks{A.keyset} m={A.m} C={C} {side:5} {scheme:9} {res['per_s']:8.1f} rows/s  wall {res['wall']:7.1f}s  "
+                print(f"conc r{A.rep} ks{A.keyset} m={A.m} C={C} {side:5} {scheme:9} {res['per_s']:8.1f} rows/s  wall {res['wall']:7.1f}s  "
                       f"acc {res['accepted']} rej {res['rejected']} retries {res['retries']} gave_up {res['gave_up']} "
                       f"{'CENSORED ' if res['censored'] else ''}violations {bad}", flush=True)
     print('done')

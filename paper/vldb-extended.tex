@@ -1276,11 +1276,12 @@ same statements accepted. Each key now costs one index, and the fixed cost of ea
 statement takes a larger share. The index is not a contribution of this paper; its
 design and full evaluation are left to future work, and Appendix~\ref{app:native}
 summarises it and its validation. With 4 or 8 concurrent clients inserting $3\cdot10^4$ rows under
-40 or 50 keys, the emulation stays correct only under a table lock, at 80--1140 rows/s for any number
-of clients, or under \sql{SERIALIZABLE}, with up to 29{,}000 retries and up to 200
-rows still failing after 50; without either it let 7 violating rows in. The native
-index needs neither, reaches 3300--13{,}200 rows/s, and the cover raises its
-throughput 1.4--2.9 times (Table~\ref{tab:native-conc}).
+40 or 50 keys, the emulation stays correct only under a table lock, at 86--1270 rows/s for any number
+of clients, or under \sql{SERIALIZABLE}, with up to 31{,}000 retries and up to 247
+rows still failing after 50; without either it let violating rows in, up to 4 per run,
+in 15 of 24 runs. The native index needs neither, reaches 3400--13{,}700 rows/s
+(medians of three runs), and the cover raises its throughput 1.3--2.6 times
+(Table~\ref{tab:native-conc}).
 
 \paragraph{Where the redundancy comes from.} Two simpler reductions bracket the
 cover (Table~\ref{tab:breakdown}). Dropping each key implied by another key on the
@@ -2550,19 +2551,22 @@ row it rejects counts as violating. Four schemes are compared: the native index 
 mode before each insert; the emulation under \sql{SERIALIZABLE}, a transaction
 retried on serialization failure at most 50 times; and the emulation under
 \sql{READ COMMITTED} without a lock. The lock serialises the inserts, so its
-throughput does not grow with $C$; \sql{SERIALIZABLE} is correct but retries up to 29{,}174 times and gives up on up to 200
-rows; without the lock the emulation is fastest but admits 1 and 7 violating rows
-at $C=4$ and $8$ on the first key set. The native index admits none, needs no
-retry and is 23--82 times faster than the locked emulation on the input; the cover
-raises its throughput 1.4--2.9 times. Which rows are accepted depends on the order
+throughput does not grow with $C$; \sql{SERIALIZABLE} is correct but retries up to 31{,}306 times and gives up on up to 247
+rows; without the lock the emulation is fastest but admits up to 4 violating rows,
+in 15 of its 24 runs with $C=4$ or $8$. The native index admits none, needs no
+retry and is 24--83 times faster than the locked emulation on the input; the cover
+raises its throughput 1.3--2.6 times. Which rows are accepted depends on the order
 in which concurrent inserts commit, so the accepted counts differ slightly between
-runs with $C>1$. Each configuration ran once.
+runs with $C>1$. Each configuration ran three times, the repetitions interleaved in
+alternating order; the three runs of a configuration differ by at most 20\,\% of
+their median.
 
 \begin{table*}[t]
 \centering
 \caption{Concurrent inserts: $3\cdot10^4$ rows split over $C$ sessions, one row per
-transaction; rows per second for input / cover, and the most retries, rows given up
-after 50 retries and violating rows of any run of the scheme}
+transaction; rows per second for input / cover (median of three runs), and over all
+runs of the scheme the most retries, rows given up after 50 retries and violating
+rows in one run (in parentheses: runs with violating rows)}
 \label{tab:native-conc}
 \small
 \adjustbox{max width=\columnwidth}{\begin{tabular}{l l r r r r r r}
@@ -2571,15 +2575,15 @@ after 50 retries and violating rows of any run of the scheme}
 \cmidrule(lr){3-5}
 keys & scheme & $C=1$ & $C=4$ & $C=8$ & retries & given up & violating \\
 \midrule
-40/13 & native & 3775/10987 & 8390/13209 & 7214/11724 & 0 & 0 & 0 \\
- & emul., lock & 163/1141 & 161/1080 & 156/1078 & 0 & 0 & 0 \\
- & emul., \sql{SERIALIZABLE} & 178/1221 & 184/2382 & 166/3118 & 20462 & 110 & 0 \\
- & emul., no lock & 188/1447 & 504/4665 & 616/7608 & 0 & 0 & 7 \\
+40/13 & native & 4179/10979 & 8210/13693 & 7051/12722 & 0 & 0 & 0 \\
+ & emul., lock & 174/1272 & 160/1240 & 157/1198 & 0 & 0 & 0 \\
+ & emul., \sql{SERIALIZABLE} & 180/1370 & 200/2664 & 176/3217 & 21116 & 156 & 0 \\
+ & emul., no lock & 188/1711 & 533/5458 & 714/8699 & 0 & 0 & 4 (8) \\
 \midrule
-50/23 & native & 3304/5987 & 6711/9647 & 5789/7911 & 0 & 0 & 0 \\
- & emul., lock & 96/427 & 82/406 & 80/394 & 0 & 0 & 0 \\
- & emul., \sql{SERIALIZABLE} & 97/445 & 90/580 & 73/460 & 29174 & 200 & 0 \\
- & emul., no lock & 90/495 & 267/1509 & 350/2199 & 0 & 0 & 0 \\
+50/23 & native & 3429/6273 & 7176/9348 & 6385/8616 & 0 & 0 & 0 \\
+ & emul., lock & 95/449 & 86/427 & 86/415 & 0 & 0 & 0 \\
+ & emul., \sql{SERIALIZABLE} & 95/471 & 91/516 & 77/473 & 31306 & 247 & 0 \\
+ & emul., no lock & 97/524 & 276/1583 & 367/2257 & 0 & 0 & 2 (7) \\
 \bottomrule
 \end{tabular}}
 \end{table*}

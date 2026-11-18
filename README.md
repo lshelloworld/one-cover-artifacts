@@ -91,7 +91,7 @@ data/
 | Native index: cost per insert (extended version, appendix) | `experiments/D_native/bench_m1.py` (see its README) | `results/D_native/m1_100k.jsonl`, `m1_1m.jsonl`, `m1_depth2_100k.jsonl` |
 | Experiment D at scale, native (10^6 inserts) | `ONECOVER_KEYSET=k python3 experiments/D_native/exp_dxl_native.py 30,40,50` for k = 1, 2, 3 | `results/D_native/dxl_native_ks{1,2,3}.jsonl` |
 | Experiment E, native (real tables) | `python3 experiments/D_native/exp_e_native.py hockey` and `... voc` | `results/D_native/e_hockey_native.jsonl`, `e_voc_native.jsonl` |
-| Concurrent inserts (extended version, appendix) | `experiments/D_native/exp_concurrency.py --keyset 1 --m 40 --rows 30000` and `--keyset 2 --m 50 --rows 30000` | `results/D_native/concurrency.jsonl` |
+| Concurrent inserts (extended version, appendix) | `experiments/D_native/exp_concurrency.py --keyset 1 --m 40 --rows 30000` and `--keyset 2 --m 50 --rows 30000` | `results/D_native/concurrency_reps.jsonl` (three repetitions, runner `results/D_native/run_concurrency_reps.sh`) |
 | Experiment E: covers of mined keys (table, levels 1/9, NOT NULL, VOC) | `make exp-E` | `results/E_mined_keys/` |
 | Experiment E: enforcement on the real tables | `make exp-E-tables` | `results/E_real_tables/` |
 | Experiment F: query optimisation (table, planning cost) | `make exp-F` | `results/F_query_optimisation/` |
