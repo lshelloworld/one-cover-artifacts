@@ -23,6 +23,7 @@ REPS = int(sys.argv[1]) if len(sys.argv) > 1 else 2
 SMOKE = [x for x in sys.argv[2:]]          # e.g. ALL:120 : run only these (fragment, m) configurations, trial 0
 os.makedirs('results/D_native', exist_ok=True)
 OUT = os.path.join('results', 'D_native', 'm2_smoke.jsonl' if SMOKE else 'm2_expD.jsonl')
+OUT = os.environ.get('ONECOVER_D_NATIVE_OUT', OUT)          # e.g. a rerun with another library
 
 def native_make_db(cur, keys, NNmask):
     cur.execute('DROP TABLE IF EXISTS T CASCADE'); cur.execute(M.table_ddl(NNmask))

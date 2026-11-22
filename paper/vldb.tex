@@ -6,7 +6,7 @@
 %%% VLDB block end %%%
 \renewcommand\vldbdoi{XX.XX/XXX.XX}
 \renewcommand\vldbpages{XXX-XXX}
-\renewcommand\vldbavailabilityurl{https://anonymous.4open.science/r/one-cover-artifacts}
+\renewcommand\vldbavailabilityurl{https://github.com/lshelloworld/one-cover-artifacts/}
 
 \usepackage{amsmath}% amssymb clashes with acmart's math fonts
 \setlength{\emergencystretch}{1.5em}% narrow columns with long \sql words
@@ -165,8 +165,8 @@ examples, a \textsc{Staff} table and a \textsc{Contact} table with
 alternative identifiers, accompany every definition and theorem.
 
 An extended version of this paper, with appendices containing all proofs, further
-examples and the complete experimental results, is available in the artifact
-repository given above.
+examples and the complete experimental results, is included as supplementary material
+and in the artifact repository given above.
 
 \section{Keys over Incomplete Relations}\label{sec:motivation}
 %=====================================================================
@@ -386,7 +386,9 @@ $t'(A)=t(A)$ or $t'(A)=\nul$. For each $P'\subseteq N_K$ the trigger probes the
 index for $P'$ with the values of $t$ on $(K\setminus P)\setminus P'$, giving
 $2^{|N_K|}$ probes in the worst case. K\"ohler et al.~\cite{KLLZ16} show that this
 is competitive with a single \sql{UNIQUE} index when the key has \sql{NOT NULL}
-columns, because every probe can search on them.
+columns, because every probe can search on them. PostgreSQL also offers a GiST
+exclusion constraint over ranges, \nul\ unbounded: safe under concurrency, slow
+without a \sql{NOT NULL} column, and not for partial keys.
 
 \paragraph{Column order.} Each index lists the \sql{NOT NULL} columns of $K$ first,
 which every probe binds, then the nullable ones from least to most often null.
@@ -1161,9 +1163,9 @@ indexes). The savings come from single-premise reasoning across classes; colouri
 guarantees that nothing more can be removed.
 
 \paragraph{At scale.} With $10^6$ inserts and $2\cdot10^5$ updates (autocommit,
-\sql{synchronous\_commit} off) on nine key sets of 30--50 keys on PostgreSQL~18.6, seven of them run twice, the cover makes both 1.2--8.6 times faster,
+\sql{synchronous\_commit} off) on nine key sets of 30--50 keys on PostgreSQL~18.6, seven of them run twice, the cover makes inserts 1.2--8.6 and updates 1.2--7.0 times faster,
 growing with the share of indexes removed: about 1.2 times at 27\,\%, 2.0--4.0 times
-at 44--71\,\%, 4.7--8.6 times at 78--79\,\%, with the same statements accepted; the
+at 44--71\,\%, 4.7--8.6 times (updates 6.4--7.0) at 78--79\,\%, with the same statements accepted; the
 extended version has the details. With the native index (4.3--13 times faster than the
 emulation) the cover makes inserts 1.3--4.1 and updates 1.2--3.6 times faster,
 growing with the share of keys removed.
@@ -1325,8 +1327,8 @@ pattern: the voyage of a given number and yard that never arrived (null arrival
 date) is found in the filtered index of that pattern of
 $\pk{\mathit{number},\mathit{yard},\mathit{arrival\_date}}$ in 0.002\,ms, against a
 0.32\,ms scan without the key. The price
-of filtered indexes is planning time: on \textsc{Master}, whose cover needs 403 of
-them, planning takes 0.24--0.33\,ms against at most 0.04\,ms without. PostgreSQL also
+of filtered indexes is planning time: on \textsc{Master}, whose cover needs 403
+indexes, planning takes 0.24--0.33\,ms against at most 0.04\,ms without. PostgreSQL also
 proves uniqueness only from unconditional indexes, so dropping
 $\pos{\mathit{number},\mathit{boatname}}$, implied by a certain key whose indexes are
 filtered, loses a join removal on \textsc{voyages} (0.30 against 1.7\,ms) that a
@@ -1404,7 +1406,6 @@ and a unique cover on all of them.
 
 Open questions include implication for key sets~\cite{Thalheim89,HLL23}
 and under completeness thresholds, native keys the planner can use, and an optimiser that reasons from the cover.
-
 Diverse ways to identify objects uniquely, but a unique way to enforce them all.
 
 

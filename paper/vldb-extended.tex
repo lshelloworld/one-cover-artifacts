@@ -6,7 +6,7 @@
 %%% VLDB block end %%%
 \renewcommand\vldbdoi{XX.XX/XXX.XX}
 \renewcommand\vldbpages{XXX-XXX}
-\renewcommand\vldbavailabilityurl{https://anonymous.4open.science/r/one-cover-artifacts}
+\renewcommand\vldbavailabilityurl{https://github.com/lshelloworld/one-cover-artifacts/}
 
 \usepackage{amsmath}% amssymb clashes with acmart's math fonts
 \setlength{\emergencystretch}{1.5em}% narrow columns with long \sql words
@@ -168,6 +168,9 @@ enforce it. Two running
 examples, a \textsc{Staff} table and a \textsc{Contact} table with
 alternative identifiers, accompany every definition and theorem.
 
+This is the extended version of the paper. Its body adds detail to the submitted
+version, and Appendices~\ref{app:pairs}--\ref{app:repro} contain all proofs, further
+examples and the complete experimental results.
 
 \section{Keys over Incomplete Relations}\label{sec:motivation}
 %=====================================================================
@@ -396,7 +399,11 @@ index for $P'$ with the values of $t$ on $(K\setminus P)\setminus P'$, giving
 $2^{|N_K|}$ probes in the worst case; as for partial keys, the columns of
 $P\setminus P'$ are free. K\"ohler et al.~\cite{KLLZ16} show that this is
 competitive with a single \sql{UNIQUE} index when the key has \sql{NOT NULL}
-columns, because every probe can search on them.
+columns, because every probe can search on them. On PostgreSQL a certain key can
+instead be an exclusion constraint, \sql{EXCLUDE USING gist} with each value $v$ as
+the range $[v,v]$ and \nul\ as the unbounded range, so that compatible records
+overlap: safe under concurrency, but slow without a \sql{NOT NULL} column. Partial
+keys have no such encoding.
 
 \paragraph{Column order.} A probe stalls at its first free column, so each index
 lists the \sql{NOT NULL} columns of $K$ first, which every probe binds, and then the
@@ -1232,8 +1239,7 @@ combined & 10 & 1.1--2.0 & 1.1--3.9 & 1.0--1.3 & 1.0--1.2 & 11 / 4 \\
 \end{table}
  At $|\Sig|=120$ the cover makes inserts
 11 times faster in $\mathcal F_1$, 28 times in $\mathcal F_2$ and 35 times in the
-combined class, updates 19, 79 and 42 times faster (79 times is 3.8 against
-0.05\,s), and the integrity check 1.2, 2.8 and 2.1 times faster; at $|\Sig|=10$, where about 75\,\% of the keys are
+combined class, updates 19, 79 and 42 times faster, and the integrity check 1.2, 2.8 and 2.1 times faster; at $|\Sig|=10$, where about 75\,\% of the keys are
 non-redundant, the gains are at most 1.6. The integrity check gains less
 because the self-join per key is cheap compared to the per-statement probes and
 because the check for a certain key, which dominates in $\mathcal F_2$, cannot use
@@ -1600,15 +1606,15 @@ $\pk{\mathit{number},\mathit{yard},\mathit{arrival\_date}}$ in 0.002\,ms, agains
 0.32\,ms scan without the key.
 
 \paragraph{Planning cost.} PostgreSQL considers every index when planning. On
-\textsc{Master}, whose cover needs 403 filtered indexes, each query touching it takes
+\textsc{Master}, whose cover needs 403 indexes, each query touching it takes
 0.24--0.33\,ms to plan against at most 0.04\,ms without them, for at most 1.1\,ms of execution.
 On \textsc{voyages} the two self-joins take 0.27--0.34\,ms to plan with the cover's
 157 indexes and 0.35--0.44\,ms with the 202 of all mined keys.
 
 \paragraph{Hidden uniqueness.} PostgreSQL proves uniqueness only from unconditional
-unique indexes. On \textsc{voyages} the cover drops
-$\pos{\mathit{number},\mathit{boatname}}$, implied by
-$\ck{\mathit{number},\mathit{boatname}}$, whose indexes are filtered, and the join
+unique indexes. On \textsc{voyages} the cover drops the possible key
+$\pos{\mathit{number},\mathit{boatname}}$, which is implied by the certain key on the
+same columns, whose indexes are filtered, and the join
 of a voyage with its ship's next voyage loses join removal, which a plain
 \sql{UNIQUE} index restores (0.30 against 1.7\,ms). The certain key's
 all-non-null index would suffice, since \sql{=} never matches null; a planner need
@@ -1923,9 +1929,9 @@ edge-critical hypergraphs, those all of whose proper sub-hypergraphs are
 
 
 \begin{example}
-For $\Sig_0$ of Section~\ref{sec:why} and target $\pos{\mathit{Name},\mathit{DoB}}$,
+For $\Sig_0$ of Section~\ref{sec:why} and target $\pos{\mathit{Name},\allowbreak\mathit{DoB}}$,
 the closure $\Sig_0^+$ contains no key contained in $\{\mathit{Name},\mathit{DoB}\}$,
-so the theorem's \eq-instance consisting of the records
+so the \eq-instance of Theorem~\ref{thm:complete} consisting of the records
 $(\text{Eve},\allowbreak 01/01/2000,\allowbreak 1\mathrm k,\allowbreak \text{A})$ and
 $(\text{Eve},\allowbreak 01/01/2000,\allowbreak 2\mathrm k,\allowbreak \text{B})$ satisfies $\Sig_0$ and
 violates the target: the possible key on name and date of birth is not redundant
@@ -1944,6 +1950,14 @@ $\pk{\mathit{Salary},\mathit{Job}}$.
 \end{example}
 
 \section{Deferred Proofs}\label{app:proofs}
+\noindent\textbf{Proof of Lemma~\ref{lem:cand}.}
+If $K\subseteq\NN$, every instance over $(S,\NN)$ is $K$-total, and on $K$-total tuples
+two records are compatible on $K$ iff they agree on $K$, so $\ck{K}$, $\dom{K}$ and
+$\cand{K}$ coincide; hence $\Sig\models\cand{K}$ iff $\Sig\models\ck{K}$. If
+$K\not\subseteq\NN$, the instance with one record that is \nul\ on every nullable
+column satisfies $\Sig$, as no key constrains a single record, but it is not
+$K$-total, so $\Sig\not\models\cand{K}$. \qed
+
 \noindent\textbf{Proof of Lemma~\ref{lem:typing}.}
 $\pos{L}$ fails iff both values are non-null and equal on every column of $L$, i.e.\
 all types are \eq. $\dom{L}$ fails iff $t(C)=t'(C)$ on all of $L$ with $\nul=\nul$,
@@ -2359,7 +2373,7 @@ Table~\ref{tab:expDpg} are the PostgreSQL~18.6 run on the same inputs, covers an
 workloads. Both tables list, for each fragment and input size, the keys of input
 and cover, the filtered indexes and trigger probes created, and the seconds for
 1500 inserts, 600 updates and the integrity check, input / cover, as means over 5
-runs. The number of indexes and probes is the same on both engines, since the
+key sets. The number of indexes and probes is the same on both engines, since the
 schemas are the same; only the times differ. Two differences between the engines
 stand out. Absolute times on PostgreSQL are 2 to 30 times higher, as each statement
 is a client--server round trip with its own savepoint rather than a call into an
@@ -2388,7 +2402,7 @@ PL/pgSQL pattern-dispatched triggers; same workload as Figure~\ref{fig:expD}.}
 
 \begin{table*}[t]
 \centering
-\caption{Experiment D, means over 5 runs: keys of input and cover, filtered
+\caption{Experiment D, means over 5 key sets: keys of input and cover, filtered
 indexes and trigger probes created, and seconds for 1500 inserts, 600 updates and
 the integrity check, input / cover}
 \label{tab:expD}
@@ -2411,7 +2425,7 @@ combined & 10 & 7.2 & 42 & 34 & 73 & 62 & 0.04 & 0.03 & 0.05 & 0.04 & 0.09 & 0.0
 \end{table*}
 \begin{table*}[t]
 \centering
-\caption{Experiment D on PostgreSQL~18.6, means over 5 runs, in the layout of
+\caption{Experiment D on PostgreSQL~18.6, means over 5 key sets, in the layout of
 Table~\ref{tab:expD}: seconds for 1500 inserts, 600 updates and the integrity
 check, input / cover}
 \label{tab:expDpg}
@@ -2618,7 +2632,7 @@ combined & 10 & 7.2 & 42 & 34 & 10 & 7 & 1.13 & 1.02 & 0.22 & 0.22 & 0.72 & 0.68
 \section{Logs and Reproducibility}\label{app:repro}
 
 All artifacts---code, data, raw results and the build of both versions of this
-paper---are available at \url{https://anonymous.4open.science/r/one-cover-artifacts}.
+paper---are available at \url{https://github.com/lshelloworld/one-cover-artifacts/}.
 Every generated input and its cover are written to \texttt{covers\_log.jsonl}
 (560 records: fragment, $n$, $k$, the \sql{NOT NULL} set, the keys of input and
 cover in the notation of this paper, their counts and attribute occurrences, and

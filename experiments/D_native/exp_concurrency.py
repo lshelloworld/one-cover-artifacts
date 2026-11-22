@@ -15,6 +15,12 @@ probability 0.3) are split round-robin over C sessions, each inserting its share
              50 times per row): correct
   emul_rc    the emulation under READ COMMITTED without a lock: not correct under concurrency; measured
              to count the violations it lets through
+  excl       stock PostgreSQL at its best, READ COMMITTED: certain keys as EXCLUDE USING gist (x WITH =,
+             int4range(n, n, '[]') WITH &&) with btree_gist (correct under concurrency); possible and domain
+             keys as unique indexes; partial keys, which no exclusion constraint expresses, by the emulation
+             (so not correct under concurrency unless --certain-only)
+--certain-only turns every partial key of the input into a certain key (and recomputes the cover), so that
+excl enforces the whole set with exclusion constraints and every scheme is comparable on the same keys.
 After each run the final table is checked against the input keys: it is reloaded into a table enforced by
 the native index, one row at a time, and every rejected row counts as a violation.
 Repetitions: --rep R tags each record with repetition R (resumable per repetition); --reverse runs the
@@ -31,6 +37,7 @@ ap.add_argument('--clients', default='1,4,8'); ap.add_argument('--schemes', defa
 ap.add_argument('--cap', type=float, default=900); ap.add_argument('--stop', default='')
 ap.add_argument('--out', default='results/D_native/concurrency.jsonl')
 ap.add_argument('--rep', type=int, default=0); ap.add_argument('--reverse', action='store_true')
+ap.add_argument('--certain-only', action='store_true')
 A = ap.parse_args()
 os.environ['ONECOVER_KEYSET'] = str(A.keyset)
 
@@ -43,13 +50,30 @@ DSN = dict(X.DSN, gssencmode='disable')
 REJECT = X.REJECT
 INS = 'INSERT INTO T(' + ','.join(X.cname(i) for i in range(X.N)) + ') VALUES(' + ','.join(['%s'] * X.N) + ')'
 
+def excl_build(cur, keys, NN):
+    cur.execute('CREATE EXTENSION IF NOT EXISTS btree_gist')
+    cur.execute('DROP TABLE IF EXISTS T CASCADE'); cur.execute(X.table_ddl(NN)); n = 0
+    for i, (cls, mask) in enumerate(keys):
+        Xc = X.cols(mask & NN); NK = X.cols(mask & ~NN)
+        if cls == 'certain' and NK:
+            parts = [f'{c} WITH =' for c in Xc] + [f"int4range({c}, {c}, '[]') WITH &&" for c in NK]
+            cur.execute(f"ALTER TABLE T ADD CONSTRAINT k{i} EXCLUDE USING gist ({', '.join(parts)})"); n += 1
+        elif cls == 'partial' and NK:
+            for s in X.index_ddl(i, cls, mask, NN): cur.execute(s); n += 1
+            for s in X.trigger_ddl(i, cls, mask, NN)[0]: cur.execute(s)
+        else:
+            for s in X.index_ddl(i, 'possible' if cls in ('partial', 'certain') else cls, mask, NN): cur.execute(s); n += 1
+    return n
+
+BUILD = dict(native=native_build, excl=excl_build)
+
 def late():
     if not A.stop: return False
     now = time.strftime('%H:%M'); return A.stop < now < '12:00'
 
 def worker(scheme, rows, deadline, stats, lock):
     con = psycopg2.connect(**DSN)
-    if scheme in ('native', 'emul_rc'): con.autocommit = True
+    if scheme in ('native', 'emul_rc', 'excl'): con.autocommit = True
     elif scheme == 'emul_ser': con.set_session(isolation_level='SERIALIZABLE')
     cur = con.cursor(); cur.execute('SET synchronous_commit = off')
     if not con.autocommit: con.commit()
@@ -85,7 +109,7 @@ def violations(con, keys, NN, rows):
 
 def run(scheme, keys, NN, rows, C):
     con = psycopg2.connect(**DSN); con.autocommit = True; cur = con.cursor()
-    nobj = (native_build if scheme == 'native' else emul_build)(cur, keys, NN)
+    nobj = BUILD.get(scheme, emul_build)(cur, keys, NN)
     cur.execute('CHECKPOINT')
     parts = [rows[c::C] for c in range(C)]; stats = dict(accepted=0, rejected=0, retries=0, gave_up=0, attempted=0)
     lock = threading.Lock(); t0 = time.perf_counter(); deadline = t0 + A.cap
@@ -99,6 +123,9 @@ def run(scheme, keys, NN, rows, C):
 
 if __name__ == '__main__':
     S, G, NN = X.keyset(A.m)
+    if A.certain_only:
+        from keys import mincover_general
+        S = sorted({('certain' if c == 'partial' else c, k) for c, k in S}); G = mincover_general(S, NN)
     rows, _ = X.workload(random.Random(11), A.rows, 0, A.values)
     done = set()
     if os.path.exists(A.out):
@@ -112,7 +139,7 @@ if __name__ == '__main__':
                 if late(): print('stopped: past', A.stop, flush=True); raise SystemExit
                 res, final = run(scheme, keys, NN, rows, C)
                 bad = violations(chk, S, NN, final)
-                rec = dict(keyset=A.keyset, m=A.m, rows=A.rows, values=A.values, clients=C, side=side, scheme=scheme, rep=A.rep,
+                rec = dict(keyset=A.keyset, m=A.m, certain_only=A.certain_only, rows=A.rows, values=A.values, clients=C, side=side, scheme=scheme, rep=A.rep,
                            keys=len(keys), violations=bad, load=os.getloadavg(), **res)
                 out.write(json.dumps(rec) + '\n'); out.flush()
                 print(f"conc r{A.rep} ks{A.keyset} m={A.m} C={C} {side:5} {scheme:9} {res['per_s']:8.1f} rows/s  wall {res['wall']:7.1f}s  "

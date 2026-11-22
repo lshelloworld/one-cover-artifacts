@@ -1,0 +1,164 @@
+import os as _os, sys as _sys
+_ROOT = _os.path.dirname(_os.path.abspath(__file__))
+while not _os.path.exists(_os.path.join(_ROOT, 'config.py')): _ROOT = _os.path.dirname(_ROOT)
+_sys.path[:0] = [_ROOT] + [_os.path.join(_ROOT, 'experiments', d) for d in ('lib', 'D_enforcement', 'D_native')]
+_os.chdir(_ROOT)
+"""PROFILING COPY of exp_concurrency.py (20 Nov 2026): adds --sides and a sampler of pg_stat_activity
+that counts, every 10 ms during the inserts, the state and wait event of every other backend of the database
+(record field "waits"); record field "pgoptions" keeps PGOPTIONS (e.g. -c nbtnull.key_locks=off).
+
+Concurrent inserts: input against cover, emulation against native index, with C client sessions.
+
+The rows of Experiment D's workload (values in [0, V), a null in one random nullable column with
+probability 0.3) are split round-robin over C sessions, each inserting its share one row per transaction
+(synchronous_commit off). Schemes:
+  native     the native index (UNIQUE / NULLS NOT DISTINCT for possible and domain keys), READ COMMITTED
+  emul_lock  the emulation (filtered unique indexes + triggers), each insert after
+             LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE, READ COMMITTED: correct, inserts serialised
+  emul_ser   the emulation under SERIALIZABLE, a transaction retried on serialization failure (at most
+             50 times per row): correct
+  emul_rc    the emulation under READ COMMITTED without a lock: not correct under concurrency; measured
+             to count the violations it lets through
+  excl       stock PostgreSQL at its best, READ COMMITTED: certain keys as EXCLUDE USING gist (x WITH =,
+             int4range(n, n, '[]') WITH &&) with btree_gist (correct under concurrency); possible and domain
+             keys as unique indexes; partial keys, which no exclusion constraint expresses, by the emulation
+             (so not correct under concurrency unless --certain-only)
+--certain-only turns every partial key of the input into a certain key (and recomputes the cover), so that
+excl enforces the whole set with exclusion constraints and every scheme is comparable on the same keys.
+After each run the final table is checked against the input keys: it is reloaded into a table enforced by
+the native index, one row at a time, and every rejected row counts as a violation.
+Repetitions: --rep R tags each record with repetition R (resumable per repetition); --reverse runs the
+configurations of that repetition in reverse order, so that repetitions interleave in alternating order.
+Usage: exp_concurrency.py --keyset 1 --m 40 --rows 100000 --clients 1,4,8 [--schemes ...] [--cap 900]
+       [--stop HH:MM] [--rep R] [--reverse] [--out results/D_native/concurrency.jsonl]"""
+import argparse, json, os, random, threading, time
+import psycopg2, psycopg2.errors
+
+ap = argparse.ArgumentParser()
+ap.add_argument('--keyset', type=int, default=1); ap.add_argument('--m', type=int, default=40)
+ap.add_argument('--rows', type=int, default=100000); ap.add_argument('--values', type=int, default=10000)
+ap.add_argument('--clients', default='1,4,8'); ap.add_argument('--schemes', default='native,emul_lock,emul_ser,emul_rc')
+ap.add_argument('--cap', type=float, default=900); ap.add_argument('--stop', default='')
+ap.add_argument('--out', default='results/D_native/concurrency.jsonl')
+ap.add_argument('--rep', type=int, default=0); ap.add_argument('--reverse', action='store_true')
+ap.add_argument('--certain-only', action='store_true'); ap.add_argument('--sides', default='input,cover')
+A = ap.parse_args()
+os.environ['ONECOVER_KEYSET'] = str(A.keyset)
+
+import exp_db2_pg_extra as X
+emul_build = X.make_indexed
+import exp_dxl_native as NV            # patches X.make_indexed; keep both builders and restore
+native_build = NV.native_indexed
+X.make_indexed = emul_build
+DSN = dict(X.DSN, gssencmode='disable')
+REJECT = X.REJECT
+INS = 'INSERT INTO T(' + ','.join(X.cname(i) for i in range(X.N)) + ') VALUES(' + ','.join(['%s'] * X.N) + ')'
+
+def excl_build(cur, keys, NN):
+    cur.execute('CREATE EXTENSION IF NOT EXISTS btree_gist')
+    cur.execute('DROP TABLE IF EXISTS T CASCADE'); cur.execute(X.table_ddl(NN)); n = 0
+    for i, (cls, mask) in enumerate(keys):
+        Xc = X.cols(mask & NN); NK = X.cols(mask & ~NN)
+        if cls == 'certain' and NK:
+            parts = [f'{c} WITH =' for c in Xc] + [f"int4range({c}, {c}, '[]') WITH &&" for c in NK]
+            cur.execute(f"ALTER TABLE T ADD CONSTRAINT k{i} EXCLUDE USING gist ({', '.join(parts)})"); n += 1
+        elif cls == 'partial' and NK:
+            for s in X.index_ddl(i, cls, mask, NN): cur.execute(s); n += 1
+            for s in X.trigger_ddl(i, cls, mask, NN)[0]: cur.execute(s)
+        else:
+            for s in X.index_ddl(i, 'possible' if cls in ('partial', 'certain') else cls, mask, NN): cur.execute(s); n += 1
+    return n
+
+BUILD = dict(native=native_build, excl=excl_build)
+
+def late():
+    if not A.stop: return False
+    now = time.strftime('%H:%M'); return A.stop < now < '12:00'
+
+def worker(scheme, rows, deadline, stats, lock):
+    con = psycopg2.connect(**DSN)
+    if scheme in ('native', 'emul_rc', 'excl'): con.autocommit = True
+    elif scheme == 'emul_ser': con.set_session(isolation_level='SERIALIZABLE')
+    cur = con.cursor(); cur.execute('SET synchronous_commit = off')
+    if not con.autocommit: con.commit()
+    acc = rej = retries = gaveup = done = 0
+    for r in rows:
+        if time.perf_counter() > deadline: break
+        for attempt in range(51):
+            try:
+                if scheme == 'emul_lock': cur.execute('LOCK TABLE T IN SHARE ROW EXCLUSIVE MODE')
+                cur.execute(INS, r)
+                if not con.autocommit: con.commit()
+                acc += 1; break
+            except REJECT:
+                if not con.autocommit: con.rollback()
+                rej += 1; break
+            except (psycopg2.errors.SerializationFailure, psycopg2.errors.DeadlockDetected):
+                if not con.autocommit: con.rollback()
+                retries += 1
+        else:
+            gaveup += 1
+        done += 1
+    con.close()
+    with lock:
+        for k, v in dict(accepted=acc, rejected=rej, retries=retries, gave_up=gaveup, attempted=done).items(): stats[k] += v
+
+def violations(con, keys, NN, rows):
+    """Reload the final rows into a table enforced by the native index; count the rejected rows."""
+    cur = con.cursor(); native_build(cur, keys, NN); bad = 0
+    for r in rows:
+        try: cur.execute(INS, r)
+        except REJECT: bad += 1
+    return bad
+
+def run(scheme, keys, NN, rows, C):
+    con = psycopg2.connect(**DSN); con.autocommit = True; cur = con.cursor()
+    nobj = BUILD.get(scheme, emul_build)(cur, keys, NN)
+    cur.execute('CHECKPOINT')
+    parts = [rows[c::C] for c in range(C)]; stats = dict(accepted=0, rejected=0, retries=0, gave_up=0, attempted=0)
+    lock = threading.Lock(); t0 = time.perf_counter(); deadline = t0 + A.cap
+    th = [threading.Thread(target=worker, args=(scheme, p, deadline, stats, lock)) for p in parts]
+    waits = {}; halt = threading.Event()
+    def sample():
+        sc = psycopg2.connect(**DSN); sc.autocommit = True; q = sc.cursor()
+        while not halt.is_set():
+            q.execute("SELECT state, coalesce(wait_event_type, '-'), coalesce(wait_event, '-') FROM pg_stat_activity "
+                      "WHERE datname = current_database() AND pid <> pg_backend_pid() AND backend_type = 'client backend'")
+            for st, wt, we in q.fetchall():
+                k = f'{st}|{wt}|{we}'; waits[k] = waits.get(k, 0) + 1
+            waits['_samples'] = waits.get('_samples', 0) + 1
+            time.sleep(0.01)
+        sc.close()
+    sm = threading.Thread(target=sample)
+    [t.start() for t in th]; sm.start(); [t.join() for t in th]; halt.set(); sm.join()
+    wall = time.perf_counter() - t0
+    cur.execute('SELECT ' + ','.join(X.cname(i) for i in range(X.N)) + ' FROM T ORDER BY rid'); final = cur.fetchall()
+    con.close()
+    return dict(objects=nobj, wall=round(wall, 3), per_s=round(stats['attempted'] / wall, 1),
+                censored=stats['attempted'] < len(rows), waits=waits, pgoptions=os.environ.get('PGOPTIONS', ''), **stats), final
+
+if __name__ == '__main__':
+    S, G, NN = X.keyset(A.m)
+    if A.certain_only:
+        from keys import mincover_general
+        S = sorted({('certain' if c == 'partial' else c, k) for c, k in S}); G = mincover_general(S, NN)
+    rows, _ = X.workload(random.Random(11), A.rows, 0, A.values)
+    done = set()
+    if os.path.exists(A.out):
+        for l in open(A.out):
+            r = json.loads(l); done.add((r['keyset'], r['m'], r['rows'], r['clients'], r['side'], r['scheme'], r.get('rep', 0), r.get('pgoptions', ''), r.get('db', 'nbtq17')))
+    out = open(A.out, 'a'); chk = psycopg2.connect(**DSN); chk.autocommit = True
+    configs = [(C, side, keys, scheme) for C in map(int, A.clients.split(','))
+               for side, keys in (('input', S), ('cover', G)) if side in A.sides.split(',') for scheme in A.schemes.split(',')]
+    for C, side, keys, scheme in (configs[::-1] if A.reverse else configs):
+                if (A.keyset, A.m, A.rows, C, side, scheme, A.rep, os.environ.get('PGOPTIONS', ''), DSN['dbname']) in done: continue
+                if late(): print('stopped: past', A.stop, flush=True); raise SystemExit
+                res, final = run(scheme, keys, NN, rows, C)
+                bad = violations(chk, S, NN, final)
+                rec = dict(keyset=A.keyset, m=A.m, certain_only=A.certain_only, rows=A.rows, values=A.values, clients=C, side=side, scheme=scheme, rep=A.rep,
+                           keys=len(keys), violations=bad, db=DSN['dbname'], load=os.getloadavg(), **res)
+                out.write(json.dumps(rec) + '\n'); out.flush()
+                print(f"conc r{A.rep} ks{A.keyset} m={A.m} C={C} {side:5} {scheme:9} {res['per_s']:8.1f} rows/s  wall {res['wall']:7.1f}s  "
+                      f"acc {res['accepted']} rej {res['rejected']} retries {res['retries']} gave_up {res['gave_up']} "
+                      f"{'CENSORED ' if res['censored'] else ''}violations {bad}", flush=True)
+    print('done')

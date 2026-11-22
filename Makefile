@@ -8,6 +8,7 @@ all: figures paper
 
 paper:                            # the paper (12 pages + references) and its extended version (with appendices)
 	cd paper && for f in vldb vldb-extended; do pdflatex -interaction=nonstopmode $$f.tex >/dev/null && pdflatex -interaction=nonstopmode $$f.tex >/dev/null; done
+	cp paper/vldb-extended.pdf extended-version.pdf   # the copy at the top of the repository (supplementary material)
 
 figures:
 	$(PY) experiments/make_figures.py
