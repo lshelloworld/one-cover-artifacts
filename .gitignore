@@ -18,6 +18,7 @@ data/public/
 # LaTeX intermediates and diffs
 *.fls
 *.fdb_latexmk
+*.cut
 paper/vldb-diff-*
 # local backups and MySQL resume files (the finished .jsonl files are committed)
 backups_tier1/

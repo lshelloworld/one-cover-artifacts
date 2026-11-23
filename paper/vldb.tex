@@ -122,8 +122,8 @@ well-defined input for normalisation~\cite{Fagin81,ZL25}.
 
 Each class in isolation is easy: a key is implied by keys of the same class exactly
 when some declared key is contained in it. Possible and certain keys together with
-\sql{NOT NULL} are finitely axiomatisable and tractable~\cite{KLLZ16}. What happens
-when all five classes interact was open.
+\sql{NOT NULL} are finitely axiomatisable and tractable~\cite{KLLZ16}. How all five
+classes interact was open.
 
 \paragraph{Contributions.}
 \begin{enumerate}
@@ -131,8 +131,8 @@ when all five classes interact was open.
   attribute occurrences) coincide and are unique up to equivalence, in the combined
   class of all five kinds of keys with \sql{NOT NULL} constraints and in each of its
   fragments: the non-redundant subset of the declared keys is the only cover. A
-  quadratic one-pass algorithm computes it in the two maximal fragments, and an
-  algorithm for the combined class adds one colouring test per certain key
+  quadratic one-pass algorithm computes it in the two maximal fragments, and one
+  for the combined class adds one colouring test per certain key
   (Section~\ref{sec:covers}).
 \item \emph{Experiments.} Almost all redundancy is found one key at a time, but
   across classes. On random key sets, dropping every key implied by a single other
@@ -146,7 +146,7 @@ when all five classes interact was open.
   11 to 35 times faster on SQLite and PostgreSQL, while admitting identical data.
   Under a prototype native index for partial and certain keys, not itself a
   contribution, the cover still makes inserts 2.5 times faster
-  at 120 keys, a gain that does not depend on the emulation
+  at 120 keys, independently of the emulation
   (Section~\ref{sec:experiments}).
 \item \emph{Implication.} The cover result rests on a complete account of
   implication: four rules are sound and complete for possible, domain, partial and
@@ -159,12 +159,12 @@ when all five classes interact was open.
   (Section~\ref{sec:limits}).
 \end{enumerate}
 Section~\ref{sec:motivation} defines the five classes together with the integrity
-requirement each captures and the index techniques of commercial systems that
+requirement each captures and the index techniques of systems that
 enforce it. Two running
 examples, a \textsc{Staff} table and a \textsc{Contact} table with
 alternative identifiers, accompany every definition and theorem.
 
-An extended version of this paper, with appendices containing all proofs, further
+An extended version of this paper, with all proofs, further
 examples and the complete experimental results, is included as supplementary material
 and in the artifact repository given above.
 
@@ -312,8 +312,8 @@ Sections~\ref{sec:axiom} and~\ref{sec:limits} say when such an index is redundan
 and how hard it is to find out. For $\Sig_0$ the answers are: yes, $\dom{\mathit{Salary},
 \mathit{Job}}$ is implied (by weakening $\pk{\mathit{Salary},\mathit{Job}}$); no,
 $\pos{\mathit{Job}}$ is not implied by the rest; and no, $\ck{\mathit{Salary},
-\mathit{Job}}$ does not follow---the construction in the proof of
-Theorem~\ref{thm:certain} produces the counterexample $\{(\text{Eve},\nul,\nul,\text{Clerk}),
+\mathit{Job}}$ does not follow---the proof of
+Theorem~\ref{thm:certain} constructs the counterexample $\{(\text{Eve},\nul,\nul,\text{Clerk}),
 (\text{Fay},\nul,80\mathrm k,\nul)\}$, in which the two records are compatible on
 $\mathit{Salary}$ and $\mathit{Job}$ but neither subsumes the other.
 
@@ -391,7 +391,7 @@ exclusion constraint over ranges, \nul\ unbounded: safe under concurrency, slow
 without a \sql{NOT NULL} column, and not for partial keys.
 
 \paragraph{Column order.} Each index lists the \sql{NOT NULL} columns of $K$ first,
-which every probe binds, then the nullable ones from least to most often null.
+which every probe binds, then the nullable ones, least often null first.
 
 \paragraph{Candidate keys.} A candidate key is a \sql{UNIQUE} index on \sql{NOT
 NULL} columns, the base case in which all five techniques coincide, as the five
@@ -666,7 +666,7 @@ fragments are exactly
 \mathcal F_1&=\{\text{possible},\text{domain},\text{partial},\text{candidate}\}\quad\text{and}\\
 \mathcal F_2&=\{\text{possible},\text{domain},\text{certain},\text{candidate}\}.
 \end{align*}
-Each is axiomatised by the instances of R1--R3 that mention only its classes.
+Each is axiomatised by the instances of R1--R3 over its classes.
 \end{theorem}
 \noindent\emph{Proof idea.} With both partial and certain keys Theorem~\ref{thm:nonfinite} applies. Without one of them condition (iii) of Theorem~\ref{thm:certain} is void, R4 and R5 mention both classes, and the remaining instances of R1--R3 are complete by Theorem~\ref{thm:complete} and Corollary~\ref{cor:fragments}.
 
@@ -795,7 +795,7 @@ domain, partial or candidate target, polynomial for a certain target when every
 partial key has at most two nullable columns, and fixed-parameter tractable in
 $|N_K|$ in general.
 \end{theorem}
-\noindent\emph{Proof idea.} One subset test per premise; for a certain target, at most $2^{|N_K|}$ search nodes of polynomial cost, one per component on a graph.
+\noindent\emph{Proof idea.} One subset test per premise; for a certain target, at most $2^{|N_K|}$ polynomial search nodes, one per graph component.
 
 
 
@@ -1203,16 +1203,16 @@ whose few non-null values happen to be distinct; these are accidental in the sen
 of~\cite{KoehlerL25}, and the cover rightly keeps them, since nothing implies them.
 Excluding \textsc{TeamSplits}, 28\% of the declared keys and 34\% of the
 indexes are redundant. Unlike in Experiment~D, dropping weaker keys on the same
-column set alone gives every cover of this section: mined redundancy is an artefact
-of mining each class separately, and the theory shows that it is all there is.
+column set alone gives every cover here: mined redundancy is an artefact
+of mining each class separately, and the theory shows it is all there is.
 
 \paragraph{Level 9.} The strict filter removes the accidental keys of the three
 record-identifying classes entirely: the domain, partial and certain lists are now
 the same 34 column sets, so each meaningful key is declared three times and the
 cover keeps one, a certain key, in every case; the 102 declared keys of these
 classes reduce to 34 and their indexes from 342 to 154. Over all four
-classes 273 keys reduce to 171 (37\%) and 513 indexes to 291 (43\%). The
-possible keys that survive the filter are still mostly accidental and remain in the
+classes 273 keys reduce to 171 (37\%) and 513 indexes to 291 (43\%). Surviving
+possible keys are still mostly accidental and stay in the
 cover for the same reason.
 
 \paragraph{A second database.} On the VOC database of Dutch East India Company
@@ -1380,14 +1380,13 @@ NP-hard to find; for keys over complete relations both notions are trivial, and
 the content of Section~\ref{sec:covers} is that they remain unique when nulls split
 the notion of key into five. Every declared key is a candidate index for index-selection
 tools~\cite{CN97}. Index advisors drop duplicate indexes by comparing definitions,
-so they cannot detect cross-class redundancy, since the filtered-index
-family of a certain key and the plain \sql{UNIQUE} index of a possible key on the
+so they miss cross-class redundancy: the filtered indexes of a certain key and the plain \sql{UNIQUE} index of a possible key on the
 same columns are different definitions. A canonical cover is also the natural input
 for semantic query optimisation, which uses declared uniqueness to remove duplicate
 elimination or to simplify joins~\cite{CGM90,PL94}; with nulls, which class of key
 justifies which rewrite is again an implication question.
 Ranking discovered keys by usefulness~\cite{PN17b,JN20} is orthogonal to a cover,
-which removes only keys the others already enforce.
+which removes only implied keys.
 
 \paragraph{Axiomatisability.} Two-tuple witnesses and column typings are in the
 spirit of Armstrong-relation constructions. Classical non-finite axiomatisations,
@@ -1408,6 +1407,12 @@ Open questions include implication for key sets~\cite{Thalheim89,HLL23}
 and under completeness thresholds, native keys the planner can use, and an optimiser that reasons from the cover.
 Diverse ways to identify objects uniquely, but a unique way to enforce them all.
 
+\begin{acks}
+The authors used Claude (Anthropic) to write the implementation and experiment
+scripts, run the experiments, analyse the results and edit the text. The authors
+designed the research, checked the proofs, code and results, and take full
+responsibility for the content.
+\end{acks}
 
 \balance
 \begin{thebibliography}{10}
