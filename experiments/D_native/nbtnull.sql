@@ -18,6 +18,6 @@ CREATE OR REPLACE FUNCTION nbtnull_key_ddl(idx text, tbl text, xcols text[], nco
 RETURNS text LANGUAGE sql IMMUTABLE AS $$
   SELECT format('CREATE INDEX %I ON %I USING nbtnull (%s(onecover_nullpat(%s)), (onecover_nullpat(%s)), %s) '
                 'WITH (nx = %s, mode = %L, shadow_depth = %s)',
-     idx, tbl, coalesce(array_to_string(xcols, ', ') || ', ', ''), array_to_string(ncols, ', '),
+     idx, tbl, coalesce(nullif(array_to_string(xcols, ', '), '') || ', ', ''), array_to_string(ncols, ', '),
      array_to_string(ncols, ', '), array_to_string(ncols, ', '), coalesce(cardinality(xcols), 0), mode, depth)
 $$;
