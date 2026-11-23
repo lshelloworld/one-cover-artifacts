@@ -1174,11 +1174,12 @@ growing with the share of keys removed.
 
 The previous experiments use random key sets. To see whether declared keys are
 redundant in practice we take the keys that key mining produces for a real
-database: all minimal keys of every class with up to five columns, mined from the
-21 tables of the Hockey database with the orthogonal key miner
-of~\cite{KoehlerL25} at completeness threshold 0, at two settings of its
-orthogonality filter. Level~1 is the laxest and returns 4350 possible, 119
-domain, 154 partial and 188 certain keys; level~9 is the strictest and returns
+database: the minimal keys of every class with up to five columns that the
+orthogonal key miner of~\cite{KoehlerL25} returns for the 21 tables of the Hockey
+database at completeness threshold 0, at two settings of its orthogonality filter.
+Both select: level~1, the laxest, returns 4350 possible, 119 domain, 154 partial
+and 188 certain keys (on \textsc{Master} 286 of its 3079 minimal possible keys of
+up to five columns); level~9 is the strictest and returns
 only the keys the miner considers meaningful, 171 possible, 34 domain, 34 partial
 and 34 certain keys. Each class is mined on its own, so the stock a data engineer
 receives is the union of four lists. Table~\ref{tab:expE} reports, per table for
