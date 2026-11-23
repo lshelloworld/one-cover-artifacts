@@ -1382,11 +1382,10 @@ $|\Sig|$ & $|\Gamma|$ & $\Sig$/$\Gamma$ & removed & ins & upd \\
 The previous experiments use random key sets. To see whether declared keys are
 redundant in practice we take the keys that key mining produces for a real
 database: the minimal keys of every class with up to five columns that the
-orthogonal key miner of~\cite{KoehlerL25} returns for the 21 tables of the Hockey
-database at completeness threshold 0, at two settings of its orthogonality filter.
-Both select: level~1, the laxest, returns 4350 possible, 119 domain, 154 partial
-and 188 certain keys (on \textsc{Master} 286 of its 3079 minimal possible keys of
-up to five columns); level~9 is the strictest and returns
+orthogonal key miner of~\cite{KoehlerL25} returns for the 21 Hockey tables at
+completeness threshold 0, at two settings of its orthogonality filter. Both select:
+level~1, the laxest, returns 4350 possible (on \textsc{Master} 286 of 3079), 119
+domain, 154 partial and 188 certain keys; level~9, the strictest, returns
 only the keys the miner considers meaningful, 171 possible, 34 domain, 34 partial
 and 34 certain keys. This is the standard setting of key discovery: each class is
 mined on its own and returns its own minimal keys that pass the filter, so the
